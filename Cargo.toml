@@ -1,0 +1,2 @@
+[workspace]
+members = ["friperms", "friperms_derive", "tests", "examples/simple_permission_system"]

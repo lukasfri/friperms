@@ -1,0 +1,21 @@
+[package]
+name = "friperms"
+description = "FriPerms is a framework for creating typed permission models for whatever system you could phatom."
+version = "0.1.0"
+edition = "2021"
+authors = ["Lukas Friman <lukas@dreamplay.net>"]
+repository = "https://github.com/DreamplaySE/friperms"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+friperms_derive = { path = "../friperms_derive", optional = true }
+serde = { version = "1.0", features = ["derive"], optional = true }
+
+[dev-dependencies]
+rstest = "0.17.0"
+
+[features]
+default = []
+derive = ["friperms_derive"]
+serde = ["dep:serde"]
