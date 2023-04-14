@@ -1,4 +1,7 @@
+#[cfg(test)]
 #[doc = include_str!("../../README.md")]
+mod doc_test {}
+
 //Set Traits
 #[macro_use]
 mod set;
