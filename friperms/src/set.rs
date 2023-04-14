@@ -5,8 +5,6 @@ pub trait Set {
 }
 
 /// Union (denoted by ∪) is the sum of two sets. Union is a symmetric relation, which means that A ∪ B must equal B ∪ A.
-// ///
-// /// As such, this trait has a default symmetric implementation, ie if you have implemented Union\<B> for A, Union\<A> for B will automatically be implemented.
 pub trait Union<Rhs>: Set {
     type Output;
 
@@ -31,8 +29,6 @@ pub trait DifferenceInPlace<Rhs>: Set {
 }
 
 /// Intersection (denoted by ∩) is the common values of two sets. Intersection is a symmetric relation, which means that A ∩ B must equal B ∩ A.
-// ///
-// /// This trait has a default implementation if the Difference trait is implemented for a type, and its output also has difference implemented.
 pub trait Intersection<Rhs>: Set {
     type Output;
 
