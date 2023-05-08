@@ -6,6 +6,7 @@ use crate::{
 /// Set-variation that exists mainly for the purpose of optimization, for example when building a set that will often be serialzied, so that a complicated empty set structure does not have to be serialized instead of a simple "None".
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(transparent))]
 pub struct Separator<Value>(Option<Box<Value>>);
 
 impl<Value: Set> Separator<Value> {
@@ -26,11 +27,7 @@ impl<Value: Set> Default for Separator<Value> {
 
 impl<Value: Set> Set for Separator<Value> {
     fn is_empty(&self) -> bool {
-        if let Some(value) = self.0.as_deref() {
-            value.is_empty()
-        } else {
-            false
-        }
+        self.0.as_ref().map_or(true, |value| value.is_empty())
     }
 
     fn empty() -> Self {
@@ -206,5 +203,31 @@ mod tests {
     {
         value1.disjunctive_union_in_place(&value2);
         assert_eq!(value1, result);
+    }
+
+    #[cfg(feature = "serde")]
+    #[test]
+    fn serializing_none_is_empty() {
+        use serde::{Deserialize, Serialize};
+
+        #[derive(Debug, Serialize, Deserialize)]
+        struct PermissionNode {
+            #[serde(skip_serializing_if = "Set::is_empty")]
+            value1: Separator<bool>,
+            #[serde(skip_serializing_if = "Set::is_empty")]
+            value2: Separator<bool>,
+        }
+
+        let node1 = PermissionNode {
+            value1: Separator::new(true),
+            value2: Separator::new(false),
+        };
+
+        println!("{node1:?}");
+
+        assert_eq!(
+            "{\"value1\":true}",
+            serde_json::to_string(&node1).unwrap().as_str()
+        );
     }
 }
