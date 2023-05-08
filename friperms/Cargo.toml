@@ -1,7 +1,7 @@
 [package]
 name = "friperms"
 description = "FriPerms is a framework for creating typed permission models for whatever system you could phatom."
-version = "0.1.1"
+version = "0.2.0"
 edition = "2021"
 authors = ["Lukas Friman <lukas@dreamplay.net>"]
 repository = "https://github.com/DreamplaySE/friperms"

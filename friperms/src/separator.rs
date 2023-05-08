@@ -8,19 +8,19 @@ use crate::{
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Separator<Value>(Option<Box<Value>>);
 
-impl<Value> Separator<Value> {
-    pub fn new() -> Self {
-        Separator(None)
-    }
-
-    fn filled(value: Value) -> Self {
-        Separator(Some(Box::new(value)))
+impl<Value: Set> Separator<Value> {
+    pub fn new(value: Value) -> Self {
+        Separator(if value.is_empty() {
+            None
+        } else {
+            Some(Box::new(value))
+        })
     }
 }
 
-impl<Value> Default for Separator<Value> {
+impl<Value: Set> Default for Separator<Value> {
     fn default() -> Self {
-        Self::new()
+        Self::empty()
     }
 }
 
@@ -34,7 +34,7 @@ impl<Value: Set> Set for Separator<Value> {
     }
 
     fn empty() -> Self {
-        Separator::new()
+        Separator(None)
     }
 }
 
@@ -129,9 +129,9 @@ where
     }
 }
 
-impl<Value> From<Value> for Separator<Value> {
+impl<Value: Set> From<Value> for Separator<Value> {
     fn from(value: Value) -> Self {
-        Separator::filled(value)
+        Separator::new(value)
     }
 }
 
@@ -145,13 +145,9 @@ mod tests {
     use super::*;
 
     #[rstest]
-    #[case(
-        Separator::filled(true),
-        Separator::filled(true),
-        Separator::filled(true)
-    )]
-    #[case(Separator::<bool>::empty(), Separator::filled(true), Separator::filled(true))]
-    #[case(Separator::filled(true), Separator::empty(), Separator::filled(true))]
+    #[case(Separator::new(true), Separator::new(true), Separator::new(true))]
+    #[case(Separator::<bool>::empty(), Separator::new(true), Separator::new(true))]
+    #[case(Separator::new(true), Separator::empty(), Separator::new(true))]
     #[case(Separator::<bool>::empty(), Separator::empty(), Separator::empty())]
     fn union_tests<Value: Clone + Debug + PartialEq, OtherValue: Clone + Set + Into<Value>>(
         #[case] mut value1: Separator<Value>,
@@ -165,9 +161,9 @@ mod tests {
     }
 
     #[rstest]
-    #[case(Separator::filled(true), Separator::filled(true), Separator::empty())]
-    #[case(Separator::<bool>::empty(), Separator::filled(true), Separator::empty())]
-    #[case(Separator::filled(true), Separator::empty(), Separator::filled(true))]
+    #[case(Separator::new(true), Separator::new(true), Separator::empty())]
+    #[case(Separator::<bool>::empty(), Separator::new(true), Separator::empty())]
+    #[case(Separator::new(true), Separator::empty(), Separator::new(true))]
     #[case(Separator::<bool>::empty(), Separator::empty(), Separator::empty())]
     fn difference_tests<Value: Debug + PartialEq, OtherValue>(
         #[case] mut value1: Separator<Value>,
@@ -181,13 +177,9 @@ mod tests {
     }
 
     #[rstest]
-    #[case(
-        Separator::filled(true),
-        Separator::filled(true),
-        Separator::filled(true)
-    )]
-    #[case(Separator::<bool>::empty(), Separator::filled(true), Separator::empty())]
-    #[case(Separator::filled(true), Separator::empty(), Separator::empty())]
+    #[case(Separator::new(true), Separator::new(true), Separator::new(true))]
+    #[case(Separator::<bool>::empty(), Separator::new(true), Separator::empty())]
+    #[case(Separator::new(true), Separator::empty(), Separator::empty())]
     #[case(Separator::<bool>::empty(), Separator::empty(), Separator::empty())]
     fn intersection_tests<Value: Debug + PartialEq, OtherValue>(
         #[case] mut value1: Separator<Value>,
@@ -201,9 +193,9 @@ mod tests {
     }
 
     #[rstest]
-    #[case(Separator::filled(true), Separator::filled(true), Separator::empty())]
-    #[case(Separator::<bool>::empty(), Separator::filled(true), Separator::filled(true))]
-    #[case(Separator::filled(true), Separator::empty(), Separator::filled(true))]
+    #[case(Separator::new(true), Separator::new(true), Separator::empty())]
+    #[case(Separator::<bool>::empty(), Separator::new(true), Separator::new(true))]
+    #[case(Separator::new(true), Separator::empty(), Separator::new(true))]
     #[case(Separator::<bool>::empty(), Separator::empty(), Separator::empty())]
     fn disjunctive_union_tests<Value: Clone + Debug + PartialEq, OtherValue: Into<Value> + Clone>(
         #[case] mut value1: Separator<Value>,
