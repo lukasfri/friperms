@@ -145,11 +145,13 @@ mod tests {
     #[case(Separator::<bool>::empty(), Separator::new(true), Separator::new(true))]
     #[case(Separator::new(true), Separator::empty(), Separator::new(true))]
     #[case(Separator::<bool>::empty(), Separator::empty(), Separator::empty())]
-    fn union_tests<Value: Clone + Debug + PartialEq, OtherValue: Clone + Set + Into<Value>>(
+    fn union_tests<Value, OtherValue>(
         #[case] mut value1: Separator<Value>,
         #[case] value2: Separator<OtherValue>,
         #[case] result: Separator<Value>,
     ) where
+        Value: Clone + Debug + PartialEq,
+        OtherValue: Clone + Set + Into<Value>,
         for<'a> Value: UnionAssign<&'a OtherValue>,
     {
         value1.union_assign(&value2);
@@ -161,11 +163,12 @@ mod tests {
     #[case(Separator::<bool>::empty(), Separator::new(true), Separator::empty())]
     #[case(Separator::new(true), Separator::empty(), Separator::new(true))]
     #[case(Separator::<bool>::empty(), Separator::empty(), Separator::empty())]
-    fn difference_tests<Value: Debug + PartialEq, OtherValue>(
+    fn difference_tests<Value, OtherValue>(
         #[case] mut value1: Separator<Value>,
         #[case] value2: Separator<OtherValue>,
         #[case] result: Separator<Value>,
     ) where
+        Value: Debug + PartialEq,
         for<'a> Value: DifferenceAssign<&'a OtherValue>,
     {
         value1.difference_assign(&value2);
@@ -177,11 +180,12 @@ mod tests {
     #[case(Separator::<bool>::empty(), Separator::new(true), Separator::empty())]
     #[case(Separator::new(true), Separator::empty(), Separator::empty())]
     #[case(Separator::<bool>::empty(), Separator::empty(), Separator::empty())]
-    fn intersection_tests<Value: Debug + PartialEq, OtherValue>(
+    fn intersection_tests<Value, OtherValue>(
         #[case] mut value1: Separator<Value>,
         #[case] value2: Separator<OtherValue>,
         #[case] result: Separator<Value>,
     ) where
+        Value: Debug + PartialEq,
         for<'a> Value: IntersectionAssign<&'a OtherValue>,
     {
         value1.intersection_assign(&value2);
@@ -193,12 +197,14 @@ mod tests {
     #[case(Separator::<bool>::empty(), Separator::new(true), Separator::new(true))]
     #[case(Separator::new(true), Separator::empty(), Separator::new(true))]
     #[case(Separator::<bool>::empty(), Separator::empty(), Separator::empty())]
-    fn disjunctive_union_tests<Value: Clone + Debug + PartialEq, OtherValue: Into<Value> + Clone>(
+    fn disjunctive_union_tests<Value, OtherValue>(
         #[case] mut value1: Separator<Value>,
         #[case] value2: Separator<OtherValue>,
         #[case] result: Separator<Value>,
     ) where
+        Value: Clone + Debug + PartialEq,
         for<'a> Value: DisjunctiveUnionAssign<&'a OtherValue>,
+        OtherValue: Into<Value> + Clone,
     {
         value1.disjunctive_union_assign(&value2);
         assert_eq!(value1, result);

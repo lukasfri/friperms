@@ -123,11 +123,13 @@ where
         let mut cleaned_rhs_wildcard_exceptions = rhs.wildcard_exceptions.clone();
 
         /// This function removes covered exceptions from a wildcard value (and it's associated exceptions).
-        fn remove_covered_values<Key: Hash + Eq + Clone, Value: Set + Clone, OtherValue>(
+        fn remove_covered_values<Key, Value, OtherValue>(
             exceptions: &mut HashMap<Key, OtherValue>,
             wildcard_value: &Value,
             wildcard_exceptions: &HashMap<Key, Value>,
         ) where
+            Key: Hash + Eq + Clone,
+            Value: Set + Clone,
             for<'a> Value: DifferenceAssign<&'a Value>, // + DifferenceAssign<&'a OtherValue>,
             for<'a> OtherValue: DifferenceAssign<&'a Value>, // + DifferenceAssign<&'a OtherValue>,
         {
@@ -380,11 +382,11 @@ mod tests {
         },
         rest_list: kv_list_set! {}
     })]
-    fn union_list_tests<I1: PartialEq<R> + Debug, I2: Debug, R: Debug>(
-        #[case] mut list1: I1,
-        #[case] list2: I2,
-        #[case] result: R,
-    ) where
+    fn union_list_tests<I1, I2, R>(#[case] mut list1: I1, #[case] list2: I2, #[case] result: R)
+    where
+        I1: PartialEq<R> + Debug,
+        I2: Debug,
+        R: Debug,
         for<'a> I1: UnionAssign<&'a I2>,
     {
         list1.union_assign(&list2);
@@ -529,11 +531,11 @@ mod tests {
             }
         }
     })]
-    fn difference_list_tests<I1: PartialEq<R> + Debug, I2: Debug, R: Debug>(
-        #[case] mut list1: I1,
-        #[case] list2: I2,
-        #[case] result: R,
-    ) where
+    fn difference_list_tests<I1, I2, R>(#[case] mut list1: I1, #[case] list2: I2, #[case] result: R)
+    where
+        I1: PartialEq<R> + Debug,
+        I2: Debug,
+        R: Debug,
         for<'a> I1: DifferenceAssign<&'a I2>,
     {
         list1.difference_assign(&list2);
