@@ -66,30 +66,26 @@ impl UserPerms {
     }
 }
 
-#[cfg(test)]
-mod tests {
+fn main() {
     use friperms::{kv_list_set, Set};
 
-    use crate::{ClanPerms, ThemingPerms, UserPerms};
-
-    #[test]
-    fn is_owner_of_clan_works() {
-        let user_perms = UserPerms {
-            account_access: true,
-            theming: ThemingPerms {
-                can_have_dark_mode: false,
-                allowed_themes: kv_list_set! {
-                    "default_theme".to_string() => true
-                },
+    let user_perms = UserPerms {
+        account_access: true,
+        theming: ThemingPerms {
+            can_have_dark_mode: false,
+            allowed_themes: kv_list_set! {
+                "default_theme".to_string() => true
             },
-            clans: kv_list_set! {
-                "redwood".to_string() => ClanPerms {
-                    owner: true,
-                    ..Set::empty()
-                }
-            },
-        };
+        },
+        clans: kv_list_set! {
+            "redwood".to_string() => ClanPerms {
+                owner: true,
+                ..Set::empty()
+            }
+        },
+    };
 
-        assert!(user_perms.is_owner_of_clan("redwood".to_string()))
-    }
+    assert!(user_perms.is_owner_of_clan("redwood".to_string()));
+
+    println!("User is owner of redwood clan");
 }

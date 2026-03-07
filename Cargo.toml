@@ -1,8 +1,3 @@
 [workspace]
 resolver = "2"
-members = [
-  "examples/simple_permission_system",
-  "friperms",
-  "friperms_derive",
-  "tests"
-]
+members = ["friperms", "friperms_derive"]
