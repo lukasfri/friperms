@@ -1,9 +1,8 @@
 [package]
 name = "friperms_derive"
-description = "FriPerms is a framework for creating typed permission models for whatever system you could phatom."
 version = "0.1.1"
 edition = "2021"
-authors = ["Lukas Friman <lukas@dreamplay.net>"]
+description = "FriPerms is a framework for creating typed permission models for whatever system you could phatom."
 repository = "https://github.com/DreamplaySE/friperms"
 license = "MIT OR Apache-2.0"
 
@@ -13,6 +12,6 @@ license = "MIT OR Apache-2.0"
 proc-macro = true
 
 [dependencies]
-syn = { version = "^1.0.69", features=["full", "fold", "printing"] }
-quote = "^1.0.10"
 proc-macro2 = "^1.0.34"
+quote = "^1.0.10"
+syn = { version = "^1.0.69", features = ["fold", "full", "printing"] }
