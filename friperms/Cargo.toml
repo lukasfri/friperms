@@ -13,6 +13,7 @@ friperms_derive = { path = "../friperms_derive", version = "^0.1.0", optional = 
 serde = { version = "1.0", features = ["derive"], optional = true }
 
 [dev-dependencies]
+friperms_derive = { path = "../friperms_derive", version = "^0.1.0" }
 rstest = "0.17.0"
 serde_json = "^1.0.86"
 

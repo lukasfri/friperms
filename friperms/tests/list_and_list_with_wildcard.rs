@@ -1,9 +1,10 @@
-use friperms::{kv_list_set, DifferenceAssign, KVListWithWildcardSet, UnionAssign};
+use friperms::{kv_list_set, DifferenceAssign, UnionAssign, WildcardHashMap};
 
 #[test]
 fn test_add() {
     let tree_1 = kv_list_set! {
-      1 => KVListWithWildcardSet {
+      1 => WildcardHashMap {
+
         rest_list: kv_list_set! {},
         wildcard_exceptions: kv_list_set! {},
         wildcard_value: Box::new(kv_list_set! {
@@ -25,7 +26,7 @@ fn test_add() {
     tree_1_minus_2.difference_assign(&tree_2);
     {
         let result = kv_list_set! {
-          1 => KVListWithWildcardSet {
+          1 => WildcardHashMap {
             rest_list: kv_list_set! {},
             wildcard_exceptions: kv_list_set! {
               5 => kv_list_set! {

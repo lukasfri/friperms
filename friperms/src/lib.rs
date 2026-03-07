@@ -15,12 +15,11 @@ mod trivial;
 
 //KV List
 #[macro_use]
-mod list;
-pub use list::KVListSet;
+mod hashmap;
 
 //KV List with Wildcard
-mod list_with_wildcard;
-pub use list_with_wildcard::KVListWithWildcardSet;
+mod wildcard_hashmap;
+pub use wildcard_hashmap::WildcardHashMap;
 
 //Set Separator
 mod separator;

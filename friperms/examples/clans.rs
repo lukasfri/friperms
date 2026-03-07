@@ -1,6 +1,8 @@
-use friperms::{
-    kv_list_set, DifferenceAssign, DisjunctiveUnionAssign, IntersectionAssign, KVListSet, Set,
-    SubsetOf, UnionAssign,
+use std::collections::HashMap;
+
+use friperms::{kv_list_set, Set, SubsetOf};
+use friperms_derive::{
+    DifferenceAssign, DisjunctiveUnionAssign, IntersectionAssign, Set, UnionAssign,
 };
 
 #[derive(
@@ -15,7 +17,7 @@ use friperms::{
 )]
 pub struct ThemingPerms {
     can_have_dark_mode: bool,
-    allowed_themes: KVListSet<String, bool>,
+    allowed_themes: HashMap<String, bool>,
 }
 
 #[derive(
@@ -46,7 +48,7 @@ pub struct ClanPerms {
 )]
 pub struct UserPerms {
     theming: ThemingPerms,
-    clans: KVListSet<String, ClanPerms>,
+    clans: HashMap<String, ClanPerms>,
     account_access: bool,
 }
 

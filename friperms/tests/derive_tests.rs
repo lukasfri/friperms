@@ -1,4 +1,5 @@
-use friperms::{DifferenceAssign, IntersectionAssign, Set, UnionAssign};
+use friperms::{Set, UnionAssign};
+use friperms_derive::{DifferenceAssign, IntersectionAssign, Set, UnionAssign};
 
 #[derive(Set, UnionAssign, DifferenceAssign, IntersectionAssign, PartialEq, Debug)]
 struct Test1 {

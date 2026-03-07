@@ -1,42 +1,40 @@
-use crate::{DifferenceAssign, Intersection, IntersectionAssign, KVListSet, Set, UnionAssign};
-use std::{hash::Hash, ops::Deref};
+use crate::{DifferenceAssign, Intersection, IntersectionAssign, Set, UnionAssign};
+use std::{collections::HashMap, hash::Hash, ops::Deref};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 /// Set-variation of a key-value list with optional wildcard. Does operations on sub-values based on key.
-pub struct KVListWithWildcardSet<Key: Hash + Eq + Clone, Value: Set> {
-    pub wildcard_exceptions: KVListSet<Key, Value>,
+pub struct WildcardHashMap<Key: Hash + Eq + Clone, Value: Set> {
+    pub wildcard_exceptions: HashMap<Key, Value>,
     pub wildcard_value: Box<Value>,
-    pub rest_list: KVListSet<Key, Value>,
+    pub rest_list: HashMap<Key, Value>,
 }
 
-impl<Key: Hash + Eq + Clone, Value: Set> KVListWithWildcardSet<Key, Value> {}
+impl<Key: Hash + Eq + Clone, Value: Set> WildcardHashMap<Key, Value> {}
 
-impl<Key: Hash + Eq + Clone, Value: Set> Set for KVListWithWildcardSet<Key, Value> {
+impl<Key: Hash + Eq + Clone, Value: Set> Set for WildcardHashMap<Key, Value> {
     fn is_empty(&self) -> bool {
         self.rest_list.is_empty() && self.wildcard_value.is_empty()
     }
 
     fn empty() -> Self {
-        KVListWithWildcardSet {
-            wildcard_exceptions: KVListSet::empty(),
+        WildcardHashMap {
+            wildcard_exceptions: HashMap::empty(),
             wildcard_value: Box::new(Value::empty()),
-            rest_list: KVListSet::empty(),
+            rest_list: HashMap::empty(),
         }
     }
 }
 
-impl<Key: Hash + Eq + Clone, Value: Set> Default for KVListWithWildcardSet<Key, Value> {
+impl<Key: Hash + Eq + Clone, Value: Set> Default for WildcardHashMap<Key, Value> {
     fn default() -> Self {
         Self::empty()
     }
 }
 
-impl<Key: Hash + Eq + Clone, Value: Set> From<KVListSet<Key, Value>>
-    for KVListWithWildcardSet<Key, Value>
-{
-    fn from(rest_list: KVListSet<Key, Value>) -> Self {
-        KVListWithWildcardSet {
+impl<Key: Hash + Eq + Clone, Value: Set> From<HashMap<Key, Value>> for WildcardHashMap<Key, Value> {
+    fn from(rest_list: HashMap<Key, Value>) -> Self {
+        WildcardHashMap {
             rest_list,
             ..Default::default()
         }
@@ -45,16 +43,16 @@ impl<Key: Hash + Eq + Clone, Value: Set> From<KVListSet<Key, Value>>
 
 // WildcardList A <-> List B
 impl<Key: Hash + Eq + Clone, Value: Set + Clone, OtherValue: Clone>
-    UnionAssign<&KVListSet<Key, OtherValue>> for KVListWithWildcardSet<Key, Value>
+    UnionAssign<&HashMap<Key, OtherValue>> for WildcardHashMap<Key, Value>
 where
     for<'a> Value: DifferenceAssign<&'a Value>
         + Intersection<&'a OtherValue, Output = Value>
         + UnionAssign<&'a OtherValue>
         + From<OtherValue>,
     for<'a> OtherValue: DifferenceAssign<&'a Value>,
-    for<'a> KVListSet<Key, Value>: Intersection<&'a KVListSet<Key, OtherValue>>,
+    for<'a> HashMap<Key, Value>: Intersection<&'a HashMap<Key, OtherValue>>,
 {
-    fn union_assign(&mut self, rhs: &KVListSet<Key, OtherValue>) {
+    fn union_assign(&mut self, rhs: &HashMap<Key, OtherValue>) {
         for (key, value) in rhs.iter() {
             //For each key, for the intersection that is covered by the wildcard and value, remove it from the exceptions for this key.
             //For the rest (that is not part of the intersection), add it to the rest list.
@@ -88,13 +86,13 @@ where
 }
 
 impl<Key: Hash + Eq + Clone, Value: Set + Clone, OtherValue>
-    DifferenceAssign<&KVListSet<Key, OtherValue>> for KVListWithWildcardSet<Key, Value>
+    DifferenceAssign<&HashMap<Key, OtherValue>> for WildcardHashMap<Key, Value>
 where
     for<'a> Value: DifferenceAssign<&'a OtherValue>
         + Intersection<&'a OtherValue, Output = Value>
         + UnionAssign<&'a Value>,
 {
-    fn difference_assign(&mut self, rhs: &KVListSet<Key, OtherValue>) {
+    fn difference_assign(&mut self, rhs: &HashMap<Key, OtherValue>) {
         self.rest_list.difference_assign(rhs);
 
         for (key, value) in rhs.iter() {
@@ -113,22 +111,22 @@ where
 
 // WildcardList A <-> WildcardList B
 impl<Key: Hash + Eq + Clone, Value: Set + Clone, OtherValue: Set + Clone>
-    UnionAssign<&KVListWithWildcardSet<Key, OtherValue>> for KVListWithWildcardSet<Key, Value>
+    UnionAssign<&WildcardHashMap<Key, OtherValue>> for WildcardHashMap<Key, Value>
 where
     for<'a> Value: DifferenceAssign<&'a Value>
         + DifferenceAssign<&'a OtherValue>
         + UnionAssign<&'a OtherValue>,
     for<'a> OtherValue: DifferenceAssign<&'a Value> + DifferenceAssign<&'a OtherValue>,
-    for<'a> KVListSet<Key, Value>: UnionAssign<&'a KVListSet<Key, OtherValue>>,
+    for<'a> HashMap<Key, Value>: UnionAssign<&'a HashMap<Key, OtherValue>>,
 {
-    fn union_assign(&mut self, rhs: &KVListWithWildcardSet<Key, OtherValue>) {
+    fn union_assign(&mut self, rhs: &WildcardHashMap<Key, OtherValue>) {
         let mut cleaned_rhs_wildcard_exceptions = rhs.wildcard_exceptions.clone();
 
         /// This function removes covered exceptions from a wildcard value (and it's associated exceptions).
         fn remove_covered_values<Key: Hash + Eq + Clone, Value: Set + Clone, OtherValue>(
-            exceptions: &mut KVListSet<Key, OtherValue>,
+            exceptions: &mut HashMap<Key, OtherValue>,
             wildcard_value: &Value,
-            wildcard_exceptions: &KVListSet<Key, Value>,
+            wildcard_exceptions: &HashMap<Key, Value>,
         ) where
             for<'a> Value: DifferenceAssign<&'a Value>, // + DifferenceAssign<&'a OtherValue>,
             for<'a> OtherValue: DifferenceAssign<&'a Value>, // + DifferenceAssign<&'a OtherValue>,
@@ -143,7 +141,7 @@ where
                 };
             }
 
-            exceptions.remove_empty_keys();
+            crate::hashmap::remove_empty_keys(exceptions);
         }
 
         // Remove exceptions in rhs covered by selfs wildcard.
@@ -180,7 +178,7 @@ where
 }
 
 impl<Key: Hash + Eq + Clone, Value: Set + Clone, OtherValue: Set + Clone>
-    DifferenceAssign<&KVListWithWildcardSet<Key, OtherValue>> for KVListWithWildcardSet<Key, Value>
+    DifferenceAssign<&WildcardHashMap<Key, OtherValue>> for WildcardHashMap<Key, Value>
 where
     for<'a> Value: DifferenceAssign<&'a Value>
         + DifferenceAssign<&'a OtherValue>
@@ -190,7 +188,7 @@ where
         + From<OtherValue>,
     for<'a> OtherValue: IntersectionAssign<&'a Value>,
 {
-    fn difference_assign(&mut self, rhs: &KVListWithWildcardSet<Key, OtherValue>) {
+    fn difference_assign(&mut self, rhs: &WildcardHashMap<Key, OtherValue>) {
         //If exception exists for X key, that value should not be removed for that key.
         //That means, if there is an intersection between that exception and the wildcard value, it should be added to the rest list.
         for (key, other_exception) in rhs.wildcard_exceptions.iter() {
@@ -252,7 +250,7 @@ mod tests {
 
     #[rstest]
     // WildcardList A <-> List B
-    #[case(KVListWithWildcardSet {
+    #[case(WildcardHashMap {
         wildcard_value: Box::new( false),
         wildcard_exceptions: kv_list_set! {},
         rest_list: kv_list_set! {
@@ -260,7 +258,7 @@ mod tests {
         },
     }, kv_list_set! {
         1 => true,
-    }, KVListWithWildcardSet {
+    }, WildcardHashMap {
         wildcard_value: Box::new( false),
         wildcard_exceptions: kv_list_set! {},
         rest_list: kv_list_set! {
@@ -268,18 +266,18 @@ mod tests {
             1 => true,
         }
     })]
-    #[case(KVListWithWildcardSet {
+    #[case(WildcardHashMap {
         wildcard_value: Box::new( true),
         wildcard_exceptions: kv_list_set! {},
         rest_list: kv_list_set! {},
     }, kv_list_set! {
         1 => true,
-    }, KVListWithWildcardSet {
+    }, WildcardHashMap {
         wildcard_value: Box::new( true),
         wildcard_exceptions: kv_list_set! {},
         rest_list: kv_list_set! {}
     })]
-    #[case(KVListWithWildcardSet {
+    #[case(WildcardHashMap {
         wildcard_value: Box::new( true),
         wildcard_exceptions: kv_list_set! {
             1 => true
@@ -287,12 +285,12 @@ mod tests {
         rest_list: kv_list_set! {},
     }, kv_list_set! {
         1 => true,
-    }, KVListWithWildcardSet {
+    }, WildcardHashMap {
         wildcard_value: Box::new( true),
         wildcard_exceptions: kv_list_set! {},
         rest_list: kv_list_set! {}
     })]
-    #[case(KVListWithWildcardSet {
+    #[case(WildcardHashMap {
         wildcard_value: Box::new( true),
         wildcard_exceptions: kv_list_set! {
             1 => true,
@@ -301,7 +299,7 @@ mod tests {
         rest_list: kv_list_set! {},
     }, kv_list_set! {
         1 => true,
-    }, KVListWithWildcardSet {
+    }, WildcardHashMap {
         wildcard_value: Box::new( true),
         wildcard_exceptions: kv_list_set! {
             2 => true,
@@ -309,44 +307,44 @@ mod tests {
         rest_list: kv_list_set! {}
     })]
     // WildcardList A <-> WildcardList B
-    #[case(KVListWithWildcardSet {
+    #[case(WildcardHashMap {
         wildcard_value: Box::new( true),
         wildcard_exceptions: kv_list_set! {
             2 => true,
         },
         rest_list: kv_list_set! {},
-    }, KVListWithWildcardSet {
+    }, WildcardHashMap {
         wildcard_value: Box::new( true),
         wildcard_exceptions: kv_list_set! {
             1 => true,
         },
         rest_list: kv_list_set! {},
-    }, KVListWithWildcardSet {
+    }, WildcardHashMap {
         wildcard_value: Box::new( true),
         wildcard_exceptions: kv_list_set! {},
         rest_list: kv_list_set! {}
     })]
-    #[case(KVListWithWildcardSet {
+    #[case(WildcardHashMap {
         wildcard_value: Box::new( true),
         wildcard_exceptions: kv_list_set! {
             1 => true,
             2 => true,
         },
         rest_list: kv_list_set! {},
-    }, KVListWithWildcardSet {
+    }, WildcardHashMap {
         wildcard_value: Box::new( true),
         wildcard_exceptions: kv_list_set! {
             1 => true,
         },
         rest_list: kv_list_set! {},
-    }, KVListWithWildcardSet {
+    }, WildcardHashMap {
         wildcard_value: Box::new( true),
         wildcard_exceptions: kv_list_set! {
             1 => true,
         },
         rest_list: kv_list_set! {}
     })]
-    #[case(KVListWithWildcardSet {
+    #[case(WildcardHashMap {
         wildcard_value: Box::new(kv_list_set! {
             1 => true
         }),
@@ -356,7 +354,7 @@ mod tests {
             }
         },
         rest_list: kv_list_set! {},
-    }, KVListWithWildcardSet {
+    }, WildcardHashMap {
         wildcard_value: Box::new(kv_list_set! {
             2 => true
         }),
@@ -370,7 +368,7 @@ mod tests {
                 1 => true
             }
         },
-    }, KVListWithWildcardSet {
+    }, WildcardHashMap {
         wildcard_value: Box::new(kv_list_set! {
             1 => true,
             2 => true
@@ -395,7 +393,7 @@ mod tests {
     }
 
     #[rstest]
-    #[case(KVListWithWildcardSet {
+    #[case(WildcardHashMap {
         wildcard_value: Box::new( false),
         wildcard_exceptions: kv_list_set! {},
         rest_list: kv_list_set! {
@@ -403,27 +401,27 @@ mod tests {
         },
     }, kv_list_set! {
         1 => true,
-    }, KVListWithWildcardSet {
+    }, WildcardHashMap {
         wildcard_value: Box::new( false),
         wildcard_exceptions: kv_list_set! {},
         rest_list: kv_list_set! {
             0 => true,
         }
     })]
-    #[case(KVListWithWildcardSet {
+    #[case(WildcardHashMap {
         wildcard_value: Box::new( true),
         wildcard_exceptions: kv_list_set! {},
         rest_list: kv_list_set! {},
     }, kv_list_set! {
         1 => true,
-    }, KVListWithWildcardSet {
+    }, WildcardHashMap {
         wildcard_value: Box::new( true),
         wildcard_exceptions: kv_list_set! {
             1 => true,
         },
         rest_list: kv_list_set! {}
     })]
-    #[case(KVListWithWildcardSet {
+    #[case(WildcardHashMap {
         wildcard_value: Box::new( true),
         wildcard_exceptions: kv_list_set! {
             1 => true
@@ -431,14 +429,14 @@ mod tests {
         rest_list: kv_list_set! {},
     }, kv_list_set! {
         1 => true,
-    }, KVListWithWildcardSet {
+    }, WildcardHashMap {
         wildcard_value: Box::new( true),
         wildcard_exceptions: kv_list_set! {
             1 => true,
         },
         rest_list: kv_list_set! {}
     })]
-    #[case(KVListWithWildcardSet {
+    #[case(WildcardHashMap {
         wildcard_value: Box::new( true),
         wildcard_exceptions: kv_list_set! {
             2 => true,
@@ -447,7 +445,7 @@ mod tests {
         },
     }, kv_list_set! {
         1 => true,
-    }, KVListWithWildcardSet {
+    }, WildcardHashMap {
         wildcard_value: Box::new( true),
         wildcard_exceptions: kv_list_set! {
             2 => true,
@@ -456,61 +454,61 @@ mod tests {
         rest_list: kv_list_set! {}
     })]
     // WildcardList A <-> WildcardList B
-    #[case(KVListWithWildcardSet::<i32, bool> {
+    #[case(WildcardHashMap::<i32, bool> {
         wildcard_value: Box::new(true),
         wildcard_exceptions: kv_list_set! {},
         rest_list: kv_list_set! {},
-    }, KVListWithWildcardSet {
+    }, WildcardHashMap {
         wildcard_value: Box::new(true),
         wildcard_exceptions: kv_list_set! {},
         rest_list: kv_list_set! {},
-    }, KVListWithWildcardSet {
+    }, WildcardHashMap {
         wildcard_value: Box::new(false),
         wildcard_exceptions: kv_list_set! {},
         rest_list: kv_list_set! {}
     })]
-    #[case(KVListWithWildcardSet {
+    #[case(WildcardHashMap {
         wildcard_value: Box::new(true),
         wildcard_exceptions: kv_list_set! {},
         rest_list: kv_list_set! {},
-    }, KVListWithWildcardSet {
+    }, WildcardHashMap {
         wildcard_value: Box::new(true),
         wildcard_exceptions: kv_list_set! {
             1 => true,
         },
         rest_list: kv_list_set! {},
-    }, KVListWithWildcardSet {
+    }, WildcardHashMap {
         wildcard_value: Box::new(false),
         wildcard_exceptions: kv_list_set! {},
         rest_list: kv_list_set! {
             1 => true,
         }
     })]
-    #[case(KVListWithWildcardSet {
+    #[case(WildcardHashMap {
         wildcard_value: Box::new(true),
         wildcard_exceptions: kv_list_set! {},
         rest_list: kv_list_set! {},
-    }, KVListWithWildcardSet {
+    }, WildcardHashMap {
         wildcard_value: Box::new(false),
         wildcard_exceptions: kv_list_set! {},
         rest_list: kv_list_set! {
             1 => true,
         },
-    }, KVListWithWildcardSet {
+    }, WildcardHashMap {
         wildcard_value: Box::new(true),
         wildcard_exceptions: kv_list_set! {
             1 => true,
         },
         rest_list: kv_list_set! {}
     })]
-    #[case(KVListWithWildcardSet {
+    #[case(WildcardHashMap {
         wildcard_value: Box::new(kv_list_set! {
             1 => true,
             2 => true
         }),
         wildcard_exceptions: kv_list_set! {},
         rest_list: kv_list_set! {},
-    }, KVListWithWildcardSet {
+    }, WildcardHashMap {
         wildcard_value: Box::new(kv_list_set! {
             1 => true
         }),
@@ -520,7 +518,7 @@ mod tests {
             }
         },
         rest_list: kv_list_set! {},
-    }, KVListWithWildcardSet {
+    }, WildcardHashMap {
         wildcard_value: Box::new(kv_list_set! {
             2 => true
         }),

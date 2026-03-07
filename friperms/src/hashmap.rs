@@ -1,53 +1,31 @@
+use std::collections::HashMap;
 pub use std::hash::Hash;
-use std::{
-    collections::HashMap,
-    ops::{Deref, DerefMut},
-};
 
 use crate::{
     DifferenceAssign, DisjunctiveUnionAssign, Intersection, IntersectionAssign, Set, UnionAssign,
 };
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-/// Set-variation of a key-value list. Does operations on sub-values based on key.
-pub struct KVListSet<Key: Hash + Eq + Clone, Value>(HashMap<Key, Value>);
-
-impl<Key: Hash + Eq + Clone, Value> KVListSet<Key, Value> {
-    pub fn new() -> Self {
-        KVListSet(HashMap::new())
-    }
+pub(crate) fn remove_empty_keys<K, V: Set>(map: &mut HashMap<K, V>) {
+    map.retain(|_key, value| !value.is_empty());
 }
 
-impl<Key: Hash + Eq + Clone, Value: Set> KVListSet<Key, Value> {
-    pub(crate) fn remove_empty_keys(&mut self) {
-        self.retain(|_key, value| !value.is_empty());
-    }
-}
-
-impl<Key: Hash + Eq + Clone, Value> Default for KVListSet<Key, Value> {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl<Key: Hash + Eq + Clone, Value> Set for KVListSet<Key, Value> {
+impl<Key: Hash + Eq + Clone, Value> Set for HashMap<Key, Value> {
     fn is_empty(&self) -> bool {
-        self.0.is_empty()
+        HashMap::is_empty(self)
     }
 
     fn empty() -> Self {
-        KVListSet::new()
+        HashMap::new()
     }
 }
 
 // List A <-> List B implementations
 impl<Key: Hash + Eq + Clone, Value: Clone, OtherValue: Clone + Set + Into<Value>>
-    UnionAssign<&KVListSet<Key, OtherValue>> for KVListSet<Key, Value>
+    UnionAssign<&HashMap<Key, OtherValue>> for HashMap<Key, Value>
 where
     for<'a> Value: UnionAssign<&'a OtherValue>,
 {
-    fn union_assign(&mut self, other: &KVListSet<Key, OtherValue>) {
+    fn union_assign(&mut self, other: &HashMap<Key, OtherValue>) {
         for (key, other_value) in other.iter() {
             if let Some(self_value) = self.get_mut(key) {
                 self_value.union_assign(other_value);
@@ -58,12 +36,12 @@ where
     }
 }
 
-impl<Key: Hash + Eq + Clone, Value, OtherValue> DifferenceAssign<&KVListSet<Key, OtherValue>>
-    for KVListSet<Key, Value>
+impl<Key: Hash + Eq + Clone, Value, OtherValue> DifferenceAssign<&HashMap<Key, OtherValue>>
+    for HashMap<Key, Value>
 where
     for<'a> Value: DifferenceAssign<&'a OtherValue>,
 {
-    fn difference_assign(&mut self, other: &KVListSet<Key, OtherValue>) {
+    fn difference_assign(&mut self, other: &HashMap<Key, OtherValue>) {
         for (key, other_value) in other.iter() {
             let Some(value) = self.get_mut(key) else {
                 continue;
@@ -72,16 +50,16 @@ where
             value.difference_assign(other_value);
         }
 
-        self.remove_empty_keys()
+        remove_empty_keys(self);
     }
 }
 
-impl<Key: Hash + Eq + Clone, Value, OtherValue> IntersectionAssign<&KVListSet<Key, OtherValue>>
-    for KVListSet<Key, Value>
+impl<Key: Hash + Eq + Clone, Value, OtherValue> IntersectionAssign<&HashMap<Key, OtherValue>>
+    for HashMap<Key, Value>
 where
     for<'a> Value: IntersectionAssign<&'a OtherValue>,
 {
-    fn intersection_assign(&mut self, other: &KVListSet<Key, OtherValue>) {
+    fn intersection_assign(&mut self, other: &HashMap<Key, OtherValue>) {
         //Remove all that don't exist at all in other
         self.retain(|key, _value| other.get(key).is_some());
 
@@ -95,13 +73,13 @@ where
     }
 }
 
-impl<Key: Hash + Eq + Clone, Value, OtherValue> Intersection<&KVListSet<Key, OtherValue>>
-    for KVListSet<Key, Value>
+impl<Key: Hash + Eq + Clone, Value, OtherValue> Intersection<&HashMap<Key, OtherValue>>
+    for HashMap<Key, Value>
 where
     for<'a> Value: IntersectionAssign<&'a OtherValue>,
 {
     type Output = Self;
-    fn intersection(mut self, other: &KVListSet<Key, OtherValue>) -> Self::Output {
+    fn intersection(mut self, other: &HashMap<Key, OtherValue>) -> Self::Output {
         self.intersection_assign(other);
 
         self
@@ -109,11 +87,11 @@ where
 }
 
 impl<Key: Hash + Eq + Clone, Value: Clone, OtherValue: Into<Value> + Clone>
-    DisjunctiveUnionAssign<&KVListSet<Key, OtherValue>> for KVListSet<Key, Value>
+    DisjunctiveUnionAssign<&HashMap<Key, OtherValue>> for HashMap<Key, Value>
 where
     for<'a> Value: DisjunctiveUnionAssign<&'a OtherValue>,
 {
-    fn disjunctive_union_assign(&mut self, rhs: &KVListSet<Key, OtherValue>) {
+    fn disjunctive_union_assign(&mut self, rhs: &HashMap<Key, OtherValue>) {
         for (key, value) in self.iter_mut() {
             let Some(other_value) = rhs.get(key) else {
                 continue;
@@ -131,27 +109,7 @@ where
             self.insert(key.clone(), value.clone().into());
         }
 
-        self.remove_empty_keys();
-    }
-}
-
-impl<Key: Hash + Eq + Clone, Value> From<HashMap<Key, Value>> for KVListSet<Key, Value> {
-    fn from(list: HashMap<Key, Value>) -> Self {
-        KVListSet(list)
-    }
-}
-
-impl<Key: Hash + Eq + Clone, Value> Deref for KVListSet<Key, Value> {
-    type Target = HashMap<Key, Value>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl<Key: Hash + Eq + Clone, Value> DerefMut for KVListSet<Key, Value> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
+        remove_empty_keys(self);
     }
 }
 
@@ -162,7 +120,7 @@ macro_rules! kv_list_set {
     );
     ($($key:expr => $val:expr),*) => ({
         #[allow(unused_mut)]
-        let mut map = $crate::KVListSet::new();
+        let mut map = ::std::collections::HashMap::new();
         $( map.insert($key.to_owned(), $val); )*
         map
     });
@@ -212,11 +170,13 @@ mod tests {
     }, kv_list_set! {
         1 => true,
     })]
-    fn union_list_tests<K: Hash + Eq + Clone + Debug, V: Set + PartialEq + Clone + Debug>(
-        #[case] mut list1: KVListSet<K, V>,
-        #[case] list2: KVListSet<K, V>,
-        #[case] result: KVListSet<K, V>,
+    fn union_list_tests<K, V>(
+        #[case] mut list1: HashMap<K, V>,
+        #[case] list2: HashMap<K, V>,
+        #[case] result: HashMap<K, V>,
     ) where
+        K: Hash + Eq + Clone + Debug,
+        V: Set + PartialEq + Clone + Debug,
         for<'a> V: UnionAssign<&'a V>,
     {
         list1.union_assign(&list2);
@@ -252,11 +212,13 @@ mod tests {
     }, kv_list_set! {
         1 => true,
     }, kv_list_set! {})]
-    fn difference_list_tests<K: Hash + Eq + Clone + Debug, V: Set + PartialEq + Clone + Debug>(
-        #[case] mut list1: KVListSet<K, V>,
-        #[case] list2: KVListSet<K, V>,
-        #[case] result: KVListSet<K, V>,
+    fn difference_list_tests<K, V>(
+        #[case] mut list1: HashMap<K, V>,
+        #[case] list2: HashMap<K, V>,
+        #[case] result: HashMap<K, V>,
     ) where
+        K: Hash + Eq + Clone + Debug,
+        V: Set + PartialEq + Clone + Debug,
         for<'a> V: DifferenceAssign<&'a V>,
     {
         list1.difference_assign(&list2);
