@@ -9,16 +9,16 @@ FriPerms is inspired by Minecraft Bukkits permission system, which are strings s
 ```rust
 extern crate friperms;
 use friperms::{
-    kv_list_set, DifferenceInPlace, DisjunctiveUnionInPlace, HasSubset, Intersection,
-    IntersectionInPlace, KVListSet, Set, UnionInPlace,
+    kv_list_set, DifferenceAssign, DisjunctiveUnionAssign, HasSubset, Intersection,
+    IntersectionAssign, KVListSet, Set, UnionAssign,
 };
 
 #[derive(
     Set,
-    UnionInPlace,
-    DifferenceInPlace,
-    IntersectionInPlace,
-    DisjunctiveUnionInPlace,
+    UnionAssign,
+    DifferenceAssign,
+    IntersectionAssign,
+    DisjunctiveUnionAssign,
     PartialEq,
     Clone,
     Debug,

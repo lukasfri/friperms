@@ -6,8 +6,8 @@ mod doc_test {}
 #[macro_use]
 mod set;
 pub use set::{
-    Difference, DifferenceInPlace, DisjunctiveUnion, DisjunctiveUnionInPlace, HasSubset,
-    Intersection, IntersectionInPlace, Set, SubsetOf, Union, UnionInPlace,
+    Difference, DifferenceAssign, DisjunctiveUnion, DisjunctiveUnionAssign, HasSubset,
+    Intersection, IntersectionAssign, Set, SubsetOf, Union, UnionAssign,
 };
 
 //Bool trivial set

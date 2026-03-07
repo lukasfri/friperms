@@ -89,7 +89,7 @@ pub fn set_derive_method(input: TokenStream) -> TokenStream {
     .into()
 }
 
-#[proc_macro_derive(UnionInPlace)]
+#[proc_macro_derive(UnionAssign)]
 pub fn union_in_place_derive_method(input: TokenStream) -> TokenStream {
     let input = proc_macro2::TokenStream::from(input);
 
@@ -97,8 +97,8 @@ pub fn union_in_place_derive_method(input: TokenStream) -> TokenStream {
     let struct_name = &input.ident;
 
     let Data::Struct(struct_data) = &input.data else {
-                        unimplemented!("Currently, there is only support for structs.");
-                    };
+        unimplemented!("Currently, there is only support for structs.");
+    };
 
     let function_body: Vec<proc_macro2::TokenStream> = match &struct_data.fields {
         syn::Fields::Named(fields) => fields
@@ -107,7 +107,7 @@ pub fn union_in_place_derive_method(input: TokenStream) -> TokenStream {
             .map(|field| {
                 let field_name = field.ident.as_ref().expect("Struct is named.");
                 quote! {
-                    ::friperms::UnionInPlace::union_in_place(&mut self.#field_name, &rhs.#field_name);
+                    ::friperms::UnionAssign::union_assign(&mut self.#field_name, &rhs.#field_name);
                 }
             })
             .collect(),
@@ -117,7 +117,7 @@ pub fn union_in_place_derive_method(input: TokenStream) -> TokenStream {
             .enumerate()
             .map(|(i, _field)| {
                 quote! {
-                    ::friperms::UnionInPlace::union_in_place(&mut self.#i, &rhs.#i);
+                    ::friperms::UnionAssign::union_assign(&mut self.#i, &rhs.#i);
                 }
             })
             .collect(),
@@ -130,8 +130,8 @@ pub fn union_in_place_derive_method(input: TokenStream) -> TokenStream {
         .expect("No unit structs means there must be atleast 1 field.");
 
     quote! {
-        impl ::friperms::UnionInPlace<&#struct_name> for #struct_name {
-            fn union_in_place(&mut self, rhs: &#struct_name) {
+        impl ::friperms::UnionAssign<&#struct_name> for #struct_name {
+            fn union_assign(&mut self, rhs: &#struct_name) {
                 #function_body
             }
         }
@@ -139,7 +139,7 @@ pub fn union_in_place_derive_method(input: TokenStream) -> TokenStream {
     .into()
 }
 
-#[proc_macro_derive(DifferenceInPlace)]
+#[proc_macro_derive(DifferenceAssign)]
 pub fn difference_in_place_derive_method(input: TokenStream) -> TokenStream {
     let input = proc_macro2::TokenStream::from(input);
 
@@ -147,8 +147,8 @@ pub fn difference_in_place_derive_method(input: TokenStream) -> TokenStream {
     let struct_name = &input.ident;
 
     let Data::Struct(struct_data) = &input.data else {
-                        unimplemented!("Currently, there is only support for structs.");
-                    };
+        unimplemented!("Currently, there is only support for structs.");
+    };
 
     let function_body: Vec<proc_macro2::TokenStream> = match &struct_data.fields {
         syn::Fields::Named(fields) => fields
@@ -157,7 +157,7 @@ pub fn difference_in_place_derive_method(input: TokenStream) -> TokenStream {
             .map(|field| {
                 let field_name = field.ident.as_ref().expect("Struct is named.");
                 quote! {
-                    ::friperms::DifferenceInPlace::difference_in_place(&mut self.#field_name, &rhs.#field_name);
+                    ::friperms::DifferenceAssign::difference_assign(&mut self.#field_name, &rhs.#field_name);
                 }
             })
             .collect(),
@@ -167,7 +167,7 @@ pub fn difference_in_place_derive_method(input: TokenStream) -> TokenStream {
             .enumerate()
             .map(|(i, _field)| {
                 quote! {
-                    ::friperms::DifferenceInPlace::difference_in_place(&mut self.#i, &rhs.#i);
+                    ::friperms::DifferenceAssign::difference_assign(&mut self.#i, &rhs.#i);
                 }
             })
             .collect(),
@@ -180,8 +180,8 @@ pub fn difference_in_place_derive_method(input: TokenStream) -> TokenStream {
         .expect("No unit structs means there must be atleast 1 field.");
 
     quote! {
-        impl ::friperms::DifferenceInPlace<&#struct_name> for #struct_name {
-            fn difference_in_place(&mut self, rhs: &#struct_name) {
+        impl ::friperms::DifferenceAssign<&#struct_name> for #struct_name {
+            fn difference_assign(&mut self, rhs: &#struct_name) {
                 #function_body
             }
         }
@@ -189,7 +189,7 @@ pub fn difference_in_place_derive_method(input: TokenStream) -> TokenStream {
     .into()
 }
 
-#[proc_macro_derive(IntersectionInPlace)]
+#[proc_macro_derive(IntersectionAssign)]
 pub fn intersection_in_place_derive_method(input: TokenStream) -> TokenStream {
     let input = proc_macro2::TokenStream::from(input);
 
@@ -197,8 +197,8 @@ pub fn intersection_in_place_derive_method(input: TokenStream) -> TokenStream {
     let struct_name = &input.ident;
 
     let Data::Struct(struct_data) = &input.data else {
-                        unimplemented!("Currently, there is only support for structs.");
-                    };
+        unimplemented!("Currently, there is only support for structs.");
+    };
 
     let function_body: Vec<proc_macro2::TokenStream> = match &struct_data.fields {
         syn::Fields::Named(fields) => fields
@@ -207,7 +207,7 @@ pub fn intersection_in_place_derive_method(input: TokenStream) -> TokenStream {
             .map(|field| {
                 let field_name = field.ident.as_ref().expect("Struct is named.");
                 quote! {
-                    ::friperms::IntersectionInPlace::intersection_in_place(&mut self.#field_name, &rhs.#field_name);
+                    ::friperms::IntersectionAssign::intersection_assign(&mut self.#field_name, &rhs.#field_name);
                 }
             })
             .collect(),
@@ -217,7 +217,7 @@ pub fn intersection_in_place_derive_method(input: TokenStream) -> TokenStream {
             .enumerate()
             .map(|(i, _field)| {
                 quote! {
-                    ::friperms::IntersectionInPlace::intersection_in_place(&mut self.#i, &rhs.#i);
+                    ::friperms::IntersectionAssign::intersection_assign(&mut self.#i, &rhs.#i);
                 }
             })
             .collect(),
@@ -230,8 +230,8 @@ pub fn intersection_in_place_derive_method(input: TokenStream) -> TokenStream {
         .expect("No unit structs means there must be atleast 1 field.");
 
     quote! {
-        impl ::friperms::IntersectionInPlace<&#struct_name> for #struct_name {
-            fn intersection_in_place(&mut self, rhs: &#struct_name) {
+        impl ::friperms::IntersectionAssign<&#struct_name> for #struct_name {
+            fn intersection_assign(&mut self, rhs: &#struct_name) {
                 #function_body
             }
         }
@@ -239,7 +239,7 @@ pub fn intersection_in_place_derive_method(input: TokenStream) -> TokenStream {
     .into()
 }
 
-#[proc_macro_derive(DisjunctiveUnionInPlace)]
+#[proc_macro_derive(DisjunctiveUnionAssign)]
 pub fn disjunctive_union_in_place_derive_method(input: TokenStream) -> TokenStream {
     let input = proc_macro2::TokenStream::from(input);
 
@@ -247,8 +247,8 @@ pub fn disjunctive_union_in_place_derive_method(input: TokenStream) -> TokenStre
     let struct_name = &input.ident;
 
     let Data::Struct(struct_data) = &input.data else {
-                        unimplemented!("Currently, there is only support for structs.");
-                    };
+        unimplemented!("Currently, there is only support for structs.");
+    };
 
     let function_body: Vec<proc_macro2::TokenStream> = match &struct_data.fields {
         syn::Fields::Named(fields) => fields
@@ -257,7 +257,7 @@ pub fn disjunctive_union_in_place_derive_method(input: TokenStream) -> TokenStre
             .map(|field| {
                 let field_name = field.ident.as_ref().expect("Struct is named.");
                 quote! {
-                    ::friperms::DisjunctiveUnionInPlace::disjunctive_union_in_place(&mut self.#field_name, &rhs.#field_name);
+                    ::friperms::DisjunctiveUnionAssign::disjunctive_union_assign(&mut self.#field_name, &rhs.#field_name);
                 }
             })
             .collect(),
@@ -267,7 +267,7 @@ pub fn disjunctive_union_in_place_derive_method(input: TokenStream) -> TokenStre
             .enumerate()
             .map(|(i, _field)| {
                 quote! {
-                    ::friperms::DisjunctiveUnionInPlace::disjunctive_union_in_place(&mut self.#i, &rhs.#i);
+                    ::friperms::DisjunctiveUnionAssign::disjunctive_union_assign(&mut self.#i, &rhs.#i);
                 }
             })
             .collect(),
@@ -280,8 +280,8 @@ pub fn disjunctive_union_in_place_derive_method(input: TokenStream) -> TokenStre
         .expect("No unit structs means there must be atleast 1 field.");
 
     quote! {
-        impl ::friperms::DisjunctiveUnionInPlace<&#struct_name> for #struct_name {
-            fn disjunctive_union_in_place(&mut self, rhs: &#struct_name) {
+        impl ::friperms::DisjunctiveUnionAssign<&#struct_name> for #struct_name {
+            fn disjunctive_union_assign(&mut self, rhs: &#struct_name) {
                 #function_body
             }
         }

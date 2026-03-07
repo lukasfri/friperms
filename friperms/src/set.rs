@@ -11,9 +11,9 @@ pub trait Union<Rhs>: Set {
     fn union(self, rhs: Rhs) -> Self::Output;
 }
 
-/// UnionInPlace is the in-place version of the Union trait.
-pub trait UnionInPlace<Rhs>: Set {
-    fn union_in_place(&mut self, rhs: Rhs);
+/// UnionAssign is the in-place version of the Union trait.
+pub trait UnionAssign<Rhs>: Set {
+    fn union_assign(&mut self, rhs: Rhs);
 }
 
 /// Difference (denoted by -) is the difference between two sets. A - B means all elements in A except the elements that are also present in B.
@@ -23,9 +23,9 @@ pub trait Difference<Rhs>: Set {
     fn difference(self, rhs: Rhs) -> Self::Output;
 }
 
-/// DifferenceInPlace is the in-place version of the Difference trait.
-pub trait DifferenceInPlace<Rhs>: Set {
-    fn difference_in_place(&mut self, rhs: Rhs);
+/// DifferenceAssign is the in-place version of the Difference trait.
+pub trait DifferenceAssign<Rhs>: Set {
+    fn difference_assign(&mut self, rhs: Rhs);
 }
 
 /// Intersection (denoted by ∩) is the common values of two sets. Intersection is a symmetric relation, which means that A ∩ B must equal B ∩ A.
@@ -35,9 +35,9 @@ pub trait Intersection<Rhs>: Set {
     fn intersection(self, rhs: Rhs) -> Self::Output;
 }
 
-/// IntersectionInPlace is the in-place version of the Intersection trait.
-pub trait IntersectionInPlace<Rhs>: Set {
-    fn intersection_in_place(&mut self, rhs: Rhs);
+/// IntersectionAssign is the in-place version of the Intersection trait.
+pub trait IntersectionAssign<Rhs>: Set {
+    fn intersection_assign(&mut self, rhs: Rhs);
 }
 
 /// SubsetCmp will check if Rhs contains Self.
@@ -47,12 +47,12 @@ pub trait SubsetOf<Rhs>: Set {
 
 impl<T: Clone + PartialEq, Rhs> SubsetOf<Rhs> for T
 where
-    for<'a> T: IntersectionInPlace<&'a Rhs>,
+    for<'a> T: IntersectionAssign<&'a Rhs>,
 {
     fn subset_of(&self, rhs: &Rhs) -> bool {
         let mut intersection = self.clone();
 
-        intersection.intersection_in_place(rhs);
+        intersection.intersection_assign(rhs);
 
         intersection == *self
     }
@@ -76,7 +76,7 @@ pub trait DisjunctiveUnion<Rhs>: Set {
     fn disjunctive_union(self, rhs: Rhs) -> Self::Output;
 }
 
-/// DisjunctiveUnionInPlace is the in-place version of the DisjunctiveUnion trait.
-pub trait DisjunctiveUnionInPlace<Rhs>: Set {
-    fn disjunctive_union_in_place(&mut self, rhs: Rhs);
+/// DisjunctiveUnionAssign is the in-place version of the DisjunctiveUnion trait.
+pub trait DisjunctiveUnionAssign<Rhs>: Set {
+    fn disjunctive_union_assign(&mut self, rhs: Rhs);
 }

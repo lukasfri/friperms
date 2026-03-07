@@ -5,8 +5,7 @@ use std::{
 };
 
 use crate::{
-    DifferenceInPlace, DisjunctiveUnionInPlace, Intersection, IntersectionInPlace, Set,
-    UnionInPlace,
+    DifferenceAssign, DisjunctiveUnionAssign, Intersection, IntersectionAssign, Set, UnionAssign,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -44,14 +43,14 @@ impl<Key: Hash + Eq + Clone, Value> Set for KVListSet<Key, Value> {
 
 // List A <-> List B implementations
 impl<Key: Hash + Eq + Clone, Value: Clone, OtherValue: Clone + Set + Into<Value>>
-    UnionInPlace<&KVListSet<Key, OtherValue>> for KVListSet<Key, Value>
+    UnionAssign<&KVListSet<Key, OtherValue>> for KVListSet<Key, Value>
 where
-    for<'a> Value: UnionInPlace<&'a OtherValue>,
+    for<'a> Value: UnionAssign<&'a OtherValue>,
 {
-    fn union_in_place(&mut self, other: &KVListSet<Key, OtherValue>) {
+    fn union_assign(&mut self, other: &KVListSet<Key, OtherValue>) {
         for (key, other_value) in other.iter() {
             if let Some(self_value) = self.get_mut(key) {
-                self_value.union_in_place(other_value);
+                self_value.union_assign(other_value);
             } else if !other_value.is_empty() {
                 self.insert(key.clone(), other_value.clone().into());
             }
@@ -59,30 +58,30 @@ where
     }
 }
 
-impl<Key: Hash + Eq + Clone, Value, OtherValue> DifferenceInPlace<&KVListSet<Key, OtherValue>>
+impl<Key: Hash + Eq + Clone, Value, OtherValue> DifferenceAssign<&KVListSet<Key, OtherValue>>
     for KVListSet<Key, Value>
 where
-    for<'a> Value: DifferenceInPlace<&'a OtherValue>,
+    for<'a> Value: DifferenceAssign<&'a OtherValue>,
 {
-    fn difference_in_place(&mut self, other: &KVListSet<Key, OtherValue>) {
+    fn difference_assign(&mut self, other: &KVListSet<Key, OtherValue>) {
         for (key, other_value) in other.iter() {
             let Some(value) = self.get_mut(key) else {
                 continue;
             };
 
-            value.difference_in_place(other_value);
+            value.difference_assign(other_value);
         }
 
         self.remove_empty_keys()
     }
 }
 
-impl<Key: Hash + Eq + Clone, Value, OtherValue> IntersectionInPlace<&KVListSet<Key, OtherValue>>
+impl<Key: Hash + Eq + Clone, Value, OtherValue> IntersectionAssign<&KVListSet<Key, OtherValue>>
     for KVListSet<Key, Value>
 where
-    for<'a> Value: IntersectionInPlace<&'a OtherValue>,
+    for<'a> Value: IntersectionAssign<&'a OtherValue>,
 {
-    fn intersection_in_place(&mut self, other: &KVListSet<Key, OtherValue>) {
+    fn intersection_assign(&mut self, other: &KVListSet<Key, OtherValue>) {
         //Remove all that don't exist at all in other
         self.retain(|key, _value| other.get(key).is_some());
 
@@ -91,7 +90,7 @@ where
                 .get(key)
                 .expect("Removed all keys above that don't exist in other.");
 
-            value.intersection_in_place(other_value);
+            value.intersection_assign(other_value);
         }
     }
 }
@@ -99,28 +98,28 @@ where
 impl<Key: Hash + Eq + Clone, Value, OtherValue> Intersection<&KVListSet<Key, OtherValue>>
     for KVListSet<Key, Value>
 where
-    for<'a> Value: IntersectionInPlace<&'a OtherValue>,
+    for<'a> Value: IntersectionAssign<&'a OtherValue>,
 {
     type Output = Self;
     fn intersection(mut self, other: &KVListSet<Key, OtherValue>) -> Self::Output {
-        self.intersection_in_place(other);
+        self.intersection_assign(other);
 
         self
     }
 }
 
 impl<Key: Hash + Eq + Clone, Value: Clone, OtherValue: Into<Value> + Clone>
-    DisjunctiveUnionInPlace<&KVListSet<Key, OtherValue>> for KVListSet<Key, Value>
+    DisjunctiveUnionAssign<&KVListSet<Key, OtherValue>> for KVListSet<Key, Value>
 where
-    for<'a> Value: DisjunctiveUnionInPlace<&'a OtherValue>,
+    for<'a> Value: DisjunctiveUnionAssign<&'a OtherValue>,
 {
-    fn disjunctive_union_in_place(&mut self, rhs: &KVListSet<Key, OtherValue>) {
+    fn disjunctive_union_assign(&mut self, rhs: &KVListSet<Key, OtherValue>) {
         for (key, value) in self.iter_mut() {
             let Some(other_value) = rhs.get(key) else {
                 continue;
             };
 
-            value.disjunctive_union_in_place(other_value);
+            value.disjunctive_union_assign(other_value);
         }
 
         //For all keys that don't exist on self (but exist on rhs), add them.
@@ -218,9 +217,9 @@ mod tests {
         #[case] list2: KVListSet<K, V>,
         #[case] result: KVListSet<K, V>,
     ) where
-        for<'a> V: UnionInPlace<&'a V>,
+        for<'a> V: UnionAssign<&'a V>,
     {
-        list1.union_in_place(&list2);
+        list1.union_assign(&list2);
 
         assert_eq!(list1, result);
     }
@@ -258,9 +257,9 @@ mod tests {
         #[case] list2: KVListSet<K, V>,
         #[case] result: KVListSet<K, V>,
     ) where
-        for<'a> V: DifferenceInPlace<&'a V>,
+        for<'a> V: DifferenceAssign<&'a V>,
     {
-        list1.difference_in_place(&list2);
+        list1.difference_assign(&list2);
 
         assert_eq!(list1, result);
     }

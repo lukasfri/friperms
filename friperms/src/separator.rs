@@ -1,6 +1,5 @@
 use crate::{
-    DifferenceInPlace, DisjunctiveUnionInPlace, Intersection, IntersectionInPlace, Set,
-    UnionInPlace,
+    DifferenceAssign, DisjunctiveUnionAssign, Intersection, IntersectionAssign, Set, UnionAssign,
 };
 
 /// Set-variation that exists mainly for the purpose of optimization, for example when building a set that will often be serialzied, so that a complicated empty set structure does not have to be serialized instead of a simple "None".
@@ -36,34 +35,34 @@ impl<Value: Set> Set for Separator<Value> {
 }
 
 // Separator A <-> Separator B implementations
-impl<Value: Clone, OtherValue: Clone + Set + Into<Value>> UnionInPlace<&Separator<OtherValue>>
+impl<Value: Clone, OtherValue: Clone + Set + Into<Value>> UnionAssign<&Separator<OtherValue>>
     for Separator<Value>
 where
-    for<'a> Value: UnionInPlace<&'a OtherValue>,
+    for<'a> Value: UnionAssign<&'a OtherValue>,
 {
-    fn union_in_place(&mut self, other: &Separator<OtherValue>) {
+    fn union_assign(&mut self, other: &Separator<OtherValue>) {
         let Some(other_value) = other.0.as_deref() else {
-          return
+            return;
         };
 
         if let Some(value) = &mut self.0 {
-            value.union_in_place(other_value);
+            value.union_assign(other_value);
         } else {
             self.0 = Some(Box::new(other_value.clone().into()));
         }
     }
 }
 
-impl<Value, OtherValue> DifferenceInPlace<&Separator<OtherValue>> for Separator<Value>
+impl<Value, OtherValue> DifferenceAssign<&Separator<OtherValue>> for Separator<Value>
 where
-    for<'a> Value: DifferenceInPlace<&'a OtherValue>,
+    for<'a> Value: DifferenceAssign<&'a OtherValue>,
 {
-    fn difference_in_place(&mut self, other: &Separator<OtherValue>) {
+    fn difference_assign(&mut self, other: &Separator<OtherValue>) {
         let (Some(value), Some(other_value)) = (self.0.as_deref_mut(), other.0.as_deref()) else {
-          return
+            return;
         };
 
-        value.difference_in_place(other_value);
+        value.difference_assign(other_value);
 
         if value.is_empty() {
             self.0 = None;
@@ -71,17 +70,17 @@ where
     }
 }
 
-impl<Value, OtherValue> IntersectionInPlace<&Separator<OtherValue>> for Separator<Value>
+impl<Value, OtherValue> IntersectionAssign<&Separator<OtherValue>> for Separator<Value>
 where
-    for<'a> Value: IntersectionInPlace<&'a OtherValue>,
+    for<'a> Value: IntersectionAssign<&'a OtherValue>,
 {
-    fn intersection_in_place(&mut self, other: &Separator<OtherValue>) {
+    fn intersection_assign(&mut self, other: &Separator<OtherValue>) {
         let Some(value) = self.0.as_deref_mut() else {
-        return
-      };
+            return;
+        };
 
         if let Some(other_value) = other.0.as_deref() {
-            value.intersection_in_place(other_value);
+            value.intersection_assign(other_value);
 
             if value.is_empty() {
                 self.0 = None;
@@ -94,28 +93,28 @@ where
 
 impl<Value, OtherValue> Intersection<&Separator<OtherValue>> for Separator<Value>
 where
-    for<'a> Value: IntersectionInPlace<&'a OtherValue>,
+    for<'a> Value: IntersectionAssign<&'a OtherValue>,
 {
     type Output = Self;
     fn intersection(mut self, other: &Separator<OtherValue>) -> Self::Output {
-        self.intersection_in_place(other);
+        self.intersection_assign(other);
 
         self
     }
 }
 
-impl<Value: Clone, OtherValue: Into<Value> + Clone> DisjunctiveUnionInPlace<&Separator<OtherValue>>
+impl<Value: Clone, OtherValue: Into<Value> + Clone> DisjunctiveUnionAssign<&Separator<OtherValue>>
     for Separator<Value>
 where
-    for<'a> Value: DisjunctiveUnionInPlace<&'a OtherValue>,
+    for<'a> Value: DisjunctiveUnionAssign<&'a OtherValue>,
 {
-    fn disjunctive_union_in_place(&mut self, other: &Separator<OtherValue>) {
+    fn disjunctive_union_assign(&mut self, other: &Separator<OtherValue>) {
         let Some(other_value) = other.0.as_deref() else {
-          return
+            return;
         };
 
         if let Some(value) = self.0.as_deref_mut() {
-            value.disjunctive_union_in_place(other_value);
+            value.disjunctive_union_assign(other_value);
 
             if value.is_empty() {
                 self.0 = None;
@@ -151,9 +150,9 @@ mod tests {
         #[case] value2: Separator<OtherValue>,
         #[case] result: Separator<Value>,
     ) where
-        for<'a> Value: UnionInPlace<&'a OtherValue>,
+        for<'a> Value: UnionAssign<&'a OtherValue>,
     {
-        value1.union_in_place(&value2);
+        value1.union_assign(&value2);
         assert_eq!(value1, result);
     }
 
@@ -167,9 +166,9 @@ mod tests {
         #[case] value2: Separator<OtherValue>,
         #[case] result: Separator<Value>,
     ) where
-        for<'a> Value: DifferenceInPlace<&'a OtherValue>,
+        for<'a> Value: DifferenceAssign<&'a OtherValue>,
     {
-        value1.difference_in_place(&value2);
+        value1.difference_assign(&value2);
         assert_eq!(value1, result);
     }
 
@@ -183,9 +182,9 @@ mod tests {
         #[case] value2: Separator<OtherValue>,
         #[case] result: Separator<Value>,
     ) where
-        for<'a> Value: IntersectionInPlace<&'a OtherValue>,
+        for<'a> Value: IntersectionAssign<&'a OtherValue>,
     {
-        value1.intersection_in_place(&value2);
+        value1.intersection_assign(&value2);
         assert_eq!(value1, result);
     }
 
@@ -199,9 +198,9 @@ mod tests {
         #[case] value2: Separator<OtherValue>,
         #[case] result: Separator<Value>,
     ) where
-        for<'a> Value: DisjunctiveUnionInPlace<&'a OtherValue>,
+        for<'a> Value: DisjunctiveUnionAssign<&'a OtherValue>,
     {
-        value1.disjunctive_union_in_place(&value2);
+        value1.disjunctive_union_assign(&value2);
         assert_eq!(value1, result);
     }
 

@@ -1,6 +1,6 @@
 use crate::{
-    set::{DifferenceInPlace, IntersectionInPlace, UnionInPlace},
-    Difference, DisjunctiveUnion, DisjunctiveUnionInPlace, Intersection, Set, Union,
+    set::{DifferenceAssign, IntersectionAssign, UnionAssign},
+    Difference, DisjunctiveUnion, DisjunctiveUnionAssign, Intersection, Set, Union,
 };
 
 //Set with a single value.
@@ -22,8 +22,8 @@ impl<'v> Union<&'v bool> for bool {
     }
 }
 
-impl<'v> UnionInPlace<&'v bool> for bool {
-    fn union_in_place(&mut self, rhs: &bool) {
+impl<'v> UnionAssign<&'v bool> for bool {
+    fn union_assign(&mut self, rhs: &bool) {
         *self = self.union(rhs);
     }
 }
@@ -40,8 +40,8 @@ impl<'v> Difference<&'v bool> for bool {
     }
 }
 
-impl<'v> DifferenceInPlace<&'v bool> for bool {
-    fn difference_in_place(&mut self, rhs: &bool) {
+impl<'v> DifferenceAssign<&'v bool> for bool {
+    fn difference_assign(&mut self, rhs: &bool) {
         *self = self.difference(rhs);
     }
 }
@@ -54,8 +54,8 @@ impl<'v> Intersection<&'v bool> for bool {
     }
 }
 
-impl<'v> IntersectionInPlace<&'v bool> for bool {
-    fn intersection_in_place(&mut self, rhs: &bool) {
+impl<'v> IntersectionAssign<&'v bool> for bool {
+    fn intersection_assign(&mut self, rhs: &bool) {
         *self = self.intersection(rhs);
     }
 }
@@ -68,8 +68,8 @@ impl<'v> DisjunctiveUnion<&'v bool> for bool {
     }
 }
 
-impl<'v> DisjunctiveUnionInPlace<&'v bool> for bool {
-    fn disjunctive_union_in_place(&mut self, rhs: &'v bool) {
+impl<'v> DisjunctiveUnionAssign<&'v bool> for bool {
+    fn disjunctive_union_assign(&mut self, rhs: &'v bool) {
         *self = self.disjunctive_union(rhs);
     }
 }

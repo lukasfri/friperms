@@ -1,4 +1,4 @@
-use friperms::{kv_list_set, DifferenceInPlace, KVListWithWildcardSet, UnionInPlace};
+use friperms::{kv_list_set, DifferenceAssign, KVListWithWildcardSet, UnionAssign};
 
 #[test]
 fn test_add() {
@@ -22,7 +22,7 @@ fn test_add() {
     };
 
     let mut tree_1_minus_2 = tree_1.clone();
-    tree_1_minus_2.difference_in_place(&tree_2);
+    tree_1_minus_2.difference_assign(&tree_2);
     {
         let result = kv_list_set! {
           1 => KVListWithWildcardSet {
@@ -41,7 +41,7 @@ fn test_add() {
         assert_eq!(tree_1_minus_2, result);
     }
 
-    tree_1_minus_2.union_in_place(&tree_2);
+    tree_1_minus_2.union_assign(&tree_2);
     //Does not equal tree_1 because 1.5.5 has been added.
     assert_ne!(tree_1, tree_1_minus_2);
 }

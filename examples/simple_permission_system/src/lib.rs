@@ -1,16 +1,16 @@
 use friperms::{
-    kv_list_set, DifferenceInPlace, DisjunctiveUnionInPlace, IntersectionInPlace, KVListSet, Set,
-    SubsetOf, UnionInPlace,
+    kv_list_set, DifferenceAssign, DisjunctiveUnionAssign, IntersectionAssign, KVListSet, Set,
+    SubsetOf, UnionAssign,
 };
 
 #[derive(
     Debug,
     Clone,
     Set,
-    UnionInPlace,
-    DifferenceInPlace,
-    IntersectionInPlace,
-    DisjunctiveUnionInPlace,
+    UnionAssign,
+    DifferenceAssign,
+    IntersectionAssign,
+    DisjunctiveUnionAssign,
     PartialEq,
 )]
 pub struct ThemingPerms {
@@ -22,10 +22,10 @@ pub struct ThemingPerms {
     Debug,
     Clone,
     Set,
-    UnionInPlace,
-    DifferenceInPlace,
-    IntersectionInPlace,
-    DisjunctiveUnionInPlace,
+    UnionAssign,
+    DifferenceAssign,
+    IntersectionAssign,
+    DisjunctiveUnionAssign,
     PartialEq,
 )]
 pub struct ClanPerms {
@@ -38,10 +38,10 @@ pub struct ClanPerms {
     Debug,
     Clone,
     Set,
-    UnionInPlace,
-    DifferenceInPlace,
-    IntersectionInPlace,
-    DisjunctiveUnionInPlace,
+    UnionAssign,
+    DifferenceAssign,
+    IntersectionAssign,
+    DisjunctiveUnionAssign,
     PartialEq,
 )]
 pub struct UserPerms {

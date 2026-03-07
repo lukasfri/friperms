@@ -1,6 +1,6 @@
-use friperms::{DifferenceInPlace, IntersectionInPlace, Set, UnionInPlace};
+use friperms::{DifferenceAssign, IntersectionAssign, Set, UnionAssign};
 
-#[derive(Set, UnionInPlace, DifferenceInPlace, IntersectionInPlace, PartialEq, Debug)]
+#[derive(Set, UnionAssign, DifferenceAssign, IntersectionAssign, PartialEq, Debug)]
 struct Test1 {
     field1: bool,
     field2: bool,
@@ -41,7 +41,7 @@ fn derive_test() {
         field2: false,
     };
 
-    value1.union_in_place(&value2);
+    value1.union_assign(&value2);
 
     let result = Test1 {
         field1: true,
