@@ -1,2 +1,8 @@
 [workspace]
-members = ["friperms", "friperms_derive", "tests", "examples/simple_permission_system"]
+resolver = "2"
+members = [
+  "examples/simple_permission_system",
+  "friperms",
+  "friperms_derive",
+  "tests"
+]

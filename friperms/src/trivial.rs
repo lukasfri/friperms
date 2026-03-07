@@ -14,7 +14,7 @@ impl Set for bool {
     }
 }
 
-impl<'v> Union<&'v bool> for bool {
+impl Union<&bool> for bool {
     type Output = bool;
 
     fn union(self, rhs: &bool) -> Self::Output {
@@ -22,13 +22,13 @@ impl<'v> Union<&'v bool> for bool {
     }
 }
 
-impl<'v> UnionAssign<&'v bool> for bool {
+impl UnionAssign<&bool> for bool {
     fn union_assign(&mut self, rhs: &bool) {
         *self = self.union(rhs);
     }
 }
 
-impl<'v> Difference<&'v bool> for bool {
+impl Difference<&bool> for bool {
     type Output = bool;
 
     fn difference(self, rhs: &bool) -> Self::Output {
@@ -40,13 +40,13 @@ impl<'v> Difference<&'v bool> for bool {
     }
 }
 
-impl<'v> DifferenceAssign<&'v bool> for bool {
+impl DifferenceAssign<&bool> for bool {
     fn difference_assign(&mut self, rhs: &bool) {
         *self = self.difference(rhs);
     }
 }
 
-impl<'v> Intersection<&'v bool> for bool {
+impl Intersection<&bool> for bool {
     type Output = bool;
 
     fn intersection(self, rhs: &bool) -> Self::Output {
@@ -54,7 +54,7 @@ impl<'v> Intersection<&'v bool> for bool {
     }
 }
 
-impl<'v> IntersectionAssign<&'v bool> for bool {
+impl IntersectionAssign<&bool> for bool {
     fn intersection_assign(&mut self, rhs: &bool) {
         *self = self.intersection(rhs);
     }

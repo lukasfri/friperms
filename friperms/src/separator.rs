@@ -26,7 +26,7 @@ impl<Value: Set> Default for Separator<Value> {
 
 impl<Value: Set> Set for Separator<Value> {
     fn is_empty(&self) -> bool {
-        self.0.as_ref().map_or(true, |value| value.is_empty())
+        self.0.as_ref().is_none_or(|value| value.is_empty())
     }
 
     fn empty() -> Self {
