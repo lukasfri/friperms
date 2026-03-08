@@ -1,21 +1,22 @@
-use friperms::{kv_list_set, DifferenceAssign, UnionAssign, WildcardHashMap};
+use friperms::{DifferenceAssign, UnionAssign, WildcardHashMap};
+use maplit::hashmap;
 
 #[test]
 fn test_add() {
-    let tree_1 = kv_list_set! {
+    let tree_1 = hashmap! {
       1 => WildcardHashMap {
 
-        rest_list: kv_list_set! {},
-        wildcard_exceptions: kv_list_set! {},
-        wildcard_value: Box::new(kv_list_set! {
+        rest_list: hashmap! {},
+        wildcard_exceptions: hashmap! {},
+        wildcard_value: Box::new(hashmap! {
           15 => true,
         })
       }
     };
 
-    let tree_2 = kv_list_set! {
-      1 => kv_list_set! {
-        5 => kv_list_set! {
+    let tree_2 = hashmap! {
+      1 => hashmap! {
+        5 => hashmap! {
           15 => true,
           5 => true,
         },
@@ -25,15 +26,15 @@ fn test_add() {
     let mut tree_1_minus_2 = tree_1.clone();
     tree_1_minus_2.difference_assign(&tree_2);
     {
-        let result = kv_list_set! {
+        let result = hashmap! {
           1 => WildcardHashMap {
-            rest_list: kv_list_set! {},
-            wildcard_exceptions: kv_list_set! {
-              5 => kv_list_set! {
+            rest_list: hashmap! {},
+            wildcard_exceptions: hashmap! {
+              5 => hashmap! {
                 15 => true,
               },
             },
-            wildcard_value: Box::new(kv_list_set! {
+            wildcard_value: Box::new(hashmap! {
               15 => true,
             }),
           }

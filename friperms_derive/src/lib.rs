@@ -75,6 +75,8 @@ pub fn set_derive_method(input: TokenStream) -> TokenStream {
 
     quote! {
         impl ::friperms::Set for #struct_name {
+            type Empty = Self;
+
             fn is_empty(&self) -> bool {
                 #is_empty_body
             }

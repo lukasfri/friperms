@@ -1,7 +1,9 @@
 /// The most basic trait that all sets must have to be able to have operations, since most require them.
 pub trait Set {
+    type Empty;
+
     fn is_empty(&self) -> bool;
-    fn empty() -> Self;
+    fn empty() -> Self::Empty;
 }
 
 /// Union (denoted by ∪) is the sum of two sets. Union is a symmetric relation, which means that A ∪ B must equal B ∪ A.

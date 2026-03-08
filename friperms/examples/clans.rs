@@ -1,9 +1,10 @@
 use std::collections::HashMap;
 
-use friperms::{kv_list_set, Set, SubsetOf};
+use friperms::{Set, SubsetOf};
 use friperms_derive::{
     DifferenceAssign, DisjunctiveUnionAssign, IntersectionAssign, Set, UnionAssign,
 };
+use maplit::hashmap;
 
 #[derive(
     Debug,
@@ -55,13 +56,13 @@ pub struct UserPerms {
 impl UserPerms {
     fn is_owner_of_clan(&self, clan_name: String) -> bool {
         let comparer = UserPerms {
-            clans: kv_list_set! {
+            clans: hashmap! {
                 clan_name => ClanPerms {
                     owner: true,
-                    ..Set::empty()
+                    ..<ClanPerms as Set>::empty()
                 }
             },
-            ..Set::empty()
+            ..<UserPerms as Set>::empty()
         };
 
         comparer.subset_of(self)
@@ -69,20 +70,20 @@ impl UserPerms {
 }
 
 fn main() {
-    use friperms::{kv_list_set, Set};
+    use friperms::Set;
 
     let user_perms = UserPerms {
         account_access: true,
         theming: ThemingPerms {
             can_have_dark_mode: false,
-            allowed_themes: kv_list_set! {
+            allowed_themes: hashmap! {
                 "default_theme".to_string() => true
             },
         },
-        clans: kv_list_set! {
+        clans: hashmap! {
             "redwood".to_string() => ClanPerms {
                 owner: true,
-                ..Set::empty()
+                ..<ClanPerms as Set>::empty()
             }
         },
     };

@@ -12,12 +12,14 @@ pub struct WildcardHashMap<Key: Hash + Eq + Clone, Value: Set> {
 
 impl<Key: Hash + Eq + Clone, Value: Set> WildcardHashMap<Key, Value> {}
 
-impl<Key: Hash + Eq + Clone, Value: Set> Set for WildcardHashMap<Key, Value> {
+impl<Key: Hash + Eq + Clone, Value: Set<Empty = Value>> Set for WildcardHashMap<Key, Value> {
+    type Empty = Self;
+
     fn is_empty(&self) -> bool {
         self.rest_list.is_empty() && self.wildcard_value.is_empty()
     }
 
-    fn empty() -> Self {
+    fn empty() -> Self::Empty {
         WildcardHashMap {
             wildcard_exceptions: HashMap::empty(),
             wildcard_value: Box::new(Value::empty()),
@@ -26,13 +28,15 @@ impl<Key: Hash + Eq + Clone, Value: Set> Set for WildcardHashMap<Key, Value> {
     }
 }
 
-impl<Key: Hash + Eq + Clone, Value: Set> Default for WildcardHashMap<Key, Value> {
+impl<Key: Hash + Eq + Clone, Value: Set<Empty = Value>> Default for WildcardHashMap<Key, Value> {
     fn default() -> Self {
         Self::empty()
     }
 }
 
-impl<Key: Hash + Eq + Clone, Value: Set> From<HashMap<Key, Value>> for WildcardHashMap<Key, Value> {
+impl<Key: Hash + Eq + Clone, Value: Set<Empty = Value>> From<HashMap<Key, Value>>
+    for WildcardHashMap<Key, Value>
+{
     fn from(rest_list: HashMap<Key, Value>) -> Self {
         WildcardHashMap {
             rest_list,
@@ -42,7 +46,7 @@ impl<Key: Hash + Eq + Clone, Value: Set> From<HashMap<Key, Value>> for WildcardH
 }
 
 // WildcardList A <-> List B
-impl<Key: Hash + Eq + Clone, Value: Set + Clone, OtherValue: Clone>
+impl<Key: Hash + Eq + Clone, Value: Set<Empty = Value> + Clone, OtherValue: Clone>
     UnionAssign<&HashMap<Key, OtherValue>> for WildcardHashMap<Key, Value>
 where
     for<'a> Value: DifferenceAssign<&'a Value>
@@ -85,8 +89,11 @@ where
     }
 }
 
-impl<Key: Hash + Eq + Clone, Value: Set + Clone, OtherValue>
-    DifferenceAssign<&HashMap<Key, OtherValue>> for WildcardHashMap<Key, Value>
+impl<
+    Key: Hash + Eq + Clone,
+    Value: Set<Empty = Value> + Clone,
+    OtherValue: Set<Empty = OtherValue> + Clone,
+> DifferenceAssign<&HashMap<Key, OtherValue>> for WildcardHashMap<Key, Value>
 where
     for<'a> Value: DifferenceAssign<&'a OtherValue>
         + Intersection<&'a OtherValue, Output = Value>
@@ -103,15 +110,18 @@ where
                 self.wildcard_exceptions
                     .entry(key.clone())
                     .and_modify(|entry| entry.union_assign(&wildcard_value))
-                    .or_insert(wildcard_value);
+                    .or_insert(*wildcard_value);
             }
         }
     }
 }
 
 // WildcardList A <-> WildcardList B
-impl<Key: Hash + Eq + Clone, Value: Set + Clone, OtherValue: Set + Clone>
-    UnionAssign<&WildcardHashMap<Key, OtherValue>> for WildcardHashMap<Key, Value>
+impl<
+    Key: Hash + Eq + Clone,
+    Value: Set<Empty = Value> + Clone,
+    OtherValue: Set<Empty = OtherValue> + Clone,
+> UnionAssign<&WildcardHashMap<Key, OtherValue>> for WildcardHashMap<Key, Value>
 where
     for<'a> Value: DifferenceAssign<&'a Value>
         + DifferenceAssign<&'a OtherValue>
@@ -129,7 +139,7 @@ where
             wildcard_exceptions: &HashMap<Key, Value>,
         ) where
             Key: Hash + Eq + Clone,
-            Value: Set + Clone,
+            Value: Set<Empty = Value> + Clone,
             for<'a> Value: DifferenceAssign<&'a Value>, // + DifferenceAssign<&'a OtherValue>,
             for<'a> OtherValue: DifferenceAssign<&'a Value>, // + DifferenceAssign<&'a OtherValue>,
         {
@@ -143,7 +153,7 @@ where
                 };
             }
 
-            crate::hashmap::remove_empty_keys(exceptions);
+            crate::impls::hashmap::remove_empty_keys(exceptions);
         }
 
         // Remove exceptions in rhs covered by selfs wildcard.
@@ -165,7 +175,7 @@ where
         // Merge the exception lists and the wildcards.
         self.wildcard_exceptions
             .union_assign(&cleaned_rhs_wildcard_exceptions);
-        self.wildcard_value.union_assign(&rhs.wildcard_value);
+        self.wildcard_value.union_assign(rhs.wildcard_value.deref());
 
         // Merge rest lists.
         self.rest_list.union_assign(&rhs.rest_list);
@@ -179,8 +189,11 @@ where
     }
 }
 
-impl<Key: Hash + Eq + Clone, Value: Set + Clone, OtherValue: Set + Clone>
-    DifferenceAssign<&WildcardHashMap<Key, OtherValue>> for WildcardHashMap<Key, Value>
+impl<
+    Key: Hash + Eq + Clone,
+    Value: Set<Empty = Value> + Clone,
+    OtherValue: Set<Empty = OtherValue> + Clone,
+> DifferenceAssign<&WildcardHashMap<Key, OtherValue>> for WildcardHashMap<Key, Value>
 where
     for<'a> Value: DifferenceAssign<&'a Value>
         + DifferenceAssign<&'a OtherValue>
@@ -248,139 +261,139 @@ mod tests {
     #[allow(unused_imports)]
     use super::*;
 
-    use crate::kv_list_set;
+    use maplit::hashmap;
 
     #[rstest]
     // WildcardList A <-> List B
     #[case(WildcardHashMap {
-        wildcard_value: Box::new( false),
-        wildcard_exceptions: kv_list_set! {},
-        rest_list: kv_list_set! {
+        wildcard_value: Box::new(false),
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {
             0 => true,
         },
-    }, kv_list_set! {
+    }, hashmap! {
         1 => true,
     }, WildcardHashMap {
-        wildcard_value: Box::new( false),
-        wildcard_exceptions: kv_list_set! {},
-        rest_list: kv_list_set! {
+        wildcard_value: Box::new(false),
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {
             0 => true,
             1 => true,
         }
     })]
     #[case(WildcardHashMap {
-        wildcard_value: Box::new( true),
-        wildcard_exceptions: kv_list_set! {},
-        rest_list: kv_list_set! {},
-    }, kv_list_set! {
+        wildcard_value: Box::new(true),
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {},
+    }, hashmap! {
         1 => true,
     }, WildcardHashMap {
-        wildcard_value: Box::new( true),
-        wildcard_exceptions: kv_list_set! {},
-        rest_list: kv_list_set! {}
+        wildcard_value: Box::new(true),
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {}
     })]
     #[case(WildcardHashMap {
-        wildcard_value: Box::new( true),
-        wildcard_exceptions: kv_list_set! {
+        wildcard_value: Box::new(true),
+        wildcard_exceptions: hashmap! {
             1 => true
         },
-        rest_list: kv_list_set! {},
-    }, kv_list_set! {
+        rest_list: hashmap! {},
+    }, hashmap! {
         1 => true,
     }, WildcardHashMap {
-        wildcard_value: Box::new( true),
-        wildcard_exceptions: kv_list_set! {},
-        rest_list: kv_list_set! {}
+        wildcard_value: Box::new(true),
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {}
     })]
     #[case(WildcardHashMap {
-        wildcard_value: Box::new( true),
-        wildcard_exceptions: kv_list_set! {
+        wildcard_value: Box::new(true),
+        wildcard_exceptions: hashmap! {
             1 => true,
             2 => true,
         },
-        rest_list: kv_list_set! {},
-    }, kv_list_set! {
+        rest_list: hashmap! {},
+    }, hashmap! {
         1 => true,
     }, WildcardHashMap {
-        wildcard_value: Box::new( true),
-        wildcard_exceptions: kv_list_set! {
+        wildcard_value: Box::new(true),
+        wildcard_exceptions: hashmap! {
             2 => true,
         },
-        rest_list: kv_list_set! {}
+        rest_list: hashmap! {}
     })]
     // WildcardList A <-> WildcardList B
     #[case(WildcardHashMap {
-        wildcard_value: Box::new( true),
-        wildcard_exceptions: kv_list_set! {
+        wildcard_value: Box::new(true),
+        wildcard_exceptions: hashmap! {
             2 => true,
         },
-        rest_list: kv_list_set! {},
+        rest_list: hashmap! {},
     }, WildcardHashMap {
-        wildcard_value: Box::new( true),
-        wildcard_exceptions: kv_list_set! {
+        wildcard_value: Box::new(true),
+        wildcard_exceptions: hashmap! {
             1 => true,
         },
-        rest_list: kv_list_set! {},
+        rest_list: hashmap! {},
     }, WildcardHashMap {
-        wildcard_value: Box::new( true),
-        wildcard_exceptions: kv_list_set! {},
-        rest_list: kv_list_set! {}
+        wildcard_value: Box::new(true),
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {}
     })]
     #[case(WildcardHashMap {
-        wildcard_value: Box::new( true),
-        wildcard_exceptions: kv_list_set! {
+        wildcard_value: Box::new(true),
+        wildcard_exceptions: hashmap! {
             1 => true,
             2 => true,
         },
-        rest_list: kv_list_set! {},
+        rest_list: hashmap! {},
     }, WildcardHashMap {
-        wildcard_value: Box::new( true),
-        wildcard_exceptions: kv_list_set! {
+        wildcard_value: Box::new(true),
+        wildcard_exceptions: hashmap! {
             1 => true,
         },
-        rest_list: kv_list_set! {},
+        rest_list: hashmap! {},
     }, WildcardHashMap {
-        wildcard_value: Box::new( true),
-        wildcard_exceptions: kv_list_set! {
+        wildcard_value: Box::new(true),
+        wildcard_exceptions: hashmap! {
             1 => true,
         },
-        rest_list: kv_list_set! {}
+        rest_list: hashmap! {}
     })]
     #[case(WildcardHashMap {
-        wildcard_value: Box::new(kv_list_set! {
+        wildcard_value: Box::new(hashmap! {
             1 => true
         }),
-        wildcard_exceptions: kv_list_set! {
-            2 => kv_list_set! {
+        wildcard_exceptions: hashmap! {
+            2 => hashmap! {
                 1 => true
             }
         },
-        rest_list: kv_list_set! {},
+        rest_list: hashmap! {},
     }, WildcardHashMap {
-        wildcard_value: Box::new(kv_list_set! {
+        wildcard_value: Box::new(hashmap! {
             2 => true
         }),
-        wildcard_exceptions: kv_list_set! {
-            1 => kv_list_set! {
+        wildcard_exceptions: hashmap! {
+            1 => hashmap! {
                 2 => true
             }
         },
-        rest_list: kv_list_set! {
-            2 => kv_list_set! {
+        rest_list: hashmap! {
+            2 => hashmap! {
                 1 => true
             }
         },
     }, WildcardHashMap {
-        wildcard_value: Box::new(kv_list_set! {
+        wildcard_value: Box::new(hashmap! {
             1 => true,
             2 => true
         }),
-        wildcard_exceptions: kv_list_set! {
-            1 => kv_list_set! {
+        wildcard_exceptions: hashmap! {
+            1 => hashmap! {
                 2 => true
             }
         },
-        rest_list: kv_list_set! {}
+        rest_list: hashmap! {}
     })]
     fn union_list_tests<I1, I2, R>(#[case] mut list1: I1, #[case] list2: I2, #[case] result: R)
     where
@@ -396,137 +409,137 @@ mod tests {
 
     #[rstest]
     #[case(WildcardHashMap {
-        wildcard_value: Box::new( false),
-        wildcard_exceptions: kv_list_set! {},
-        rest_list: kv_list_set! {
+        wildcard_value: Box::new(false),
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {
             0 => true,
         },
-    }, kv_list_set! {
+    }, hashmap! {
         1 => true,
     }, WildcardHashMap {
-        wildcard_value: Box::new( false),
-        wildcard_exceptions: kv_list_set! {},
-        rest_list: kv_list_set! {
+        wildcard_value: Box::new(false),
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {
             0 => true,
         }
     })]
     #[case(WildcardHashMap {
-        wildcard_value: Box::new( true),
-        wildcard_exceptions: kv_list_set! {},
-        rest_list: kv_list_set! {},
-    }, kv_list_set! {
+        wildcard_value: Box::new(true),
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {},
+    }, hashmap! {
         1 => true,
     }, WildcardHashMap {
-        wildcard_value: Box::new( true),
-        wildcard_exceptions: kv_list_set! {
+        wildcard_value: Box::new(true),
+        wildcard_exceptions: hashmap! {
             1 => true,
         },
-        rest_list: kv_list_set! {}
+        rest_list: hashmap! {}
     })]
     #[case(WildcardHashMap {
-        wildcard_value: Box::new( true),
-        wildcard_exceptions: kv_list_set! {
+        wildcard_value: Box::new(true),
+        wildcard_exceptions: hashmap! {
             1 => true
         },
-        rest_list: kv_list_set! {},
-    }, kv_list_set! {
+        rest_list: hashmap! {},
+    }, hashmap! {
         1 => true,
     }, WildcardHashMap {
-        wildcard_value: Box::new( true),
-        wildcard_exceptions: kv_list_set! {
+        wildcard_value: Box::new(true),
+        wildcard_exceptions: hashmap! {
             1 => true,
         },
-        rest_list: kv_list_set! {}
+        rest_list: hashmap! {}
     })]
     #[case(WildcardHashMap {
-        wildcard_value: Box::new( true),
-        wildcard_exceptions: kv_list_set! {
+        wildcard_value: Box::new(true),
+        wildcard_exceptions: hashmap! {
             2 => true,
         },
-        rest_list: kv_list_set! {
+        rest_list: hashmap! {
         },
-    }, kv_list_set! {
+    }, hashmap! {
         1 => true,
     }, WildcardHashMap {
-        wildcard_value: Box::new( true),
-        wildcard_exceptions: kv_list_set! {
+        wildcard_value: Box::new(true),
+        wildcard_exceptions: hashmap! {
             2 => true,
             1 => true,
         },
-        rest_list: kv_list_set! {}
+        rest_list: hashmap! {}
     })]
     // WildcardList A <-> WildcardList B
     #[case(WildcardHashMap::<i32, bool> {
         wildcard_value: Box::new(true),
-        wildcard_exceptions: kv_list_set! {},
-        rest_list: kv_list_set! {},
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {},
     }, WildcardHashMap {
         wildcard_value: Box::new(true),
-        wildcard_exceptions: kv_list_set! {},
-        rest_list: kv_list_set! {},
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {},
     }, WildcardHashMap {
         wildcard_value: Box::new(false),
-        wildcard_exceptions: kv_list_set! {},
-        rest_list: kv_list_set! {}
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {}
     })]
     #[case(WildcardHashMap {
         wildcard_value: Box::new(true),
-        wildcard_exceptions: kv_list_set! {},
-        rest_list: kv_list_set! {},
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {},
     }, WildcardHashMap {
         wildcard_value: Box::new(true),
-        wildcard_exceptions: kv_list_set! {
+        wildcard_exceptions: hashmap! {
             1 => true,
         },
-        rest_list: kv_list_set! {},
+        rest_list: hashmap! {},
     }, WildcardHashMap {
         wildcard_value: Box::new(false),
-        wildcard_exceptions: kv_list_set! {},
-        rest_list: kv_list_set! {
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {
             1 => true,
         }
     })]
     #[case(WildcardHashMap {
         wildcard_value: Box::new(true),
-        wildcard_exceptions: kv_list_set! {},
-        rest_list: kv_list_set! {},
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {},
     }, WildcardHashMap {
         wildcard_value: Box::new(false),
-        wildcard_exceptions: kv_list_set! {},
-        rest_list: kv_list_set! {
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {
             1 => true,
         },
     }, WildcardHashMap {
         wildcard_value: Box::new(true),
-        wildcard_exceptions: kv_list_set! {
+        wildcard_exceptions: hashmap! {
             1 => true,
         },
-        rest_list: kv_list_set! {}
+        rest_list: hashmap! {}
     })]
     #[case(WildcardHashMap {
-        wildcard_value: Box::new(kv_list_set! {
+        wildcard_value: Box::new(hashmap! {
             1 => true,
             2 => true
         }),
-        wildcard_exceptions: kv_list_set! {},
-        rest_list: kv_list_set! {},
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {},
     }, WildcardHashMap {
-        wildcard_value: Box::new(kv_list_set! {
+        wildcard_value: Box::new(hashmap! {
             1 => true
         }),
-        wildcard_exceptions: kv_list_set! {
-            2 => kv_list_set! {
+        wildcard_exceptions: hashmap! {
+            2 => hashmap! {
                 1 => true
             }
         },
-        rest_list: kv_list_set! {},
+        rest_list: hashmap! {},
     }, WildcardHashMap {
-        wildcard_value: Box::new(kv_list_set! {
+        wildcard_value: Box::new(hashmap! {
             2 => true
         }),
-        wildcard_exceptions: kv_list_set! {},
-        rest_list: kv_list_set! {
-            2 => kv_list_set! {
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {
+            2 => hashmap! {
                 1 => true
             }
         }

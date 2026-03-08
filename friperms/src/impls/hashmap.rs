@@ -10,11 +10,13 @@ pub(crate) fn remove_empty_keys<K, V: Set>(map: &mut HashMap<K, V>) {
 }
 
 impl<Key: Hash + Eq + Clone, Value> Set for HashMap<Key, Value> {
+    type Empty = Self;
+
     fn is_empty(&self) -> bool {
         HashMap::is_empty(self)
     }
 
-    fn empty() -> Self {
+    fn empty() -> Self::Empty {
         HashMap::new()
     }
 }
@@ -113,61 +115,49 @@ where
     }
 }
 
-#[macro_export]
-macro_rules! kv_list_set {
-    ($($key:expr => $val:expr),* ,) => (
-        $crate::kv_list_set!($($key => $val),*)
-    );
-    ($($key:expr => $val:expr),*) => ({
-        #[allow(unused_mut)]
-        let mut map = ::std::collections::HashMap::new();
-        $( map.insert($key.to_owned(), $val); )*
-        map
-    });
-}
-
 #[cfg(test)]
 mod tests {
     use std::fmt::Debug;
 
+    use maplit::hashmap;
     use rstest::*;
 
     #[allow(unused_imports)]
     use super::*;
 
     #[rstest]
-    #[case(kv_list_set! {
+    #[case(hashmap! {
         0 => true,
         1 => true,
-    }, kv_list_set! {
+    }, hashmap! {
         0 => true,
         1 => true,
-    }, kv_list_set! {
-        0 => true,
-        1 => true,
-    })]
-    #[case(kv_list_set! {
-        0 => true,
-        1 => true,
-    }, kv_list_set! {
-        1 => true,
-    }, kv_list_set! {
+    }, hashmap! {
         0 => true,
         1 => true,
     })]
-    #[case(kv_list_set! {
-        1 => true,
-    }, kv_list_set! {
+    #[case(hashmap! {
         0 => true,
-    }, kv_list_set! {
+        1 => true,
+    }, hashmap! {
+        1 => true,
+    }, hashmap! {
         0 => true,
         1 => true,
     })]
-    #[case(kv_list_set! {
+    #[case(hashmap! {
         1 => true,
-    }, kv_list_set! {
+    }, hashmap! {
+        0 => true,
+    }, hashmap! {
+        0 => true,
         1 => true,
-    }, kv_list_set! {
+    })]
+    #[case(hashmap! {
+        1 => true,
+    }, hashmap! {
+        1 => true,
+    }, hashmap! {
         1 => true,
     })]
     fn union_list_tests<K, V>(
@@ -185,33 +175,33 @@ mod tests {
     }
 
     #[rstest]
-    #[case(kv_list_set! {
+    #[case(hashmap! {
         0 => true,
         1 => true,
-    }, kv_list_set! {
+    }, hashmap! {
         0 => true,
         1 => true,
-    }, kv_list_set! {})]
-    #[case(kv_list_set! {
+    }, hashmap! {})]
+    #[case(hashmap! {
         0 => true,
         1 => true,
-    }, kv_list_set! {
+    }, hashmap! {
         1 => true,
-    }, kv_list_set! {
+    }, hashmap! {
         0 => true,
     })]
-    #[case(kv_list_set! {
+    #[case(hashmap! {
         1 => true,
-    }, kv_list_set! {
+    }, hashmap! {
         0 => true,
-    }, kv_list_set! {
+    }, hashmap! {
         1 => true,
     })]
-    #[case(kv_list_set! {
+    #[case(hashmap! {
         1 => true,
-    }, kv_list_set! {
+    }, hashmap! {
         1 => true,
-    }, kv_list_set! {})]
+    }, hashmap! {})]
     fn difference_list_tests<K, V>(
         #[case] mut list1: HashMap<K, V>,
         #[case] list2: HashMap<K, V>,

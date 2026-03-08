@@ -10,20 +10,10 @@ pub use set::{
     Intersection, IntersectionAssign, Set, SubsetOf, Union, UnionAssign,
 };
 
-//Bool trivial set
-mod trivial;
+mod impls;
 
-//KV List
-#[macro_use]
-mod hashmap;
-
-//KV List with Wildcard
-mod wildcard_hashmap;
-pub use wildcard_hashmap::WildcardHashMap;
-
-//Set Separator
-mod separator;
-pub use separator::Separator;
+mod wildcards;
+pub use wildcards::WildcardHashMap;
 
 #[cfg(feature = "derive")]
 pub use friperms_derive::*;
