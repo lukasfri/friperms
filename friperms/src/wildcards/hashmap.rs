@@ -1,4 +1,4 @@
-use crate::{DifferenceAssign, Intersection, IntersectionAssign, Set, UnionAssign};
+use crate::{DifferenceAssign, IntersectionAssign, Set, UnionAssign};
 use std::{collections::HashMap, hash::Hash, ops::Deref};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -46,30 +46,28 @@ impl<Key: Hash + Eq + Clone, Value: Set<Empty = Value>> From<HashMap<Key, Value>
 }
 
 // WildcardList A <-> List B
-impl<Key: Hash + Eq + Clone, Value: Set<Empty = Value> + Clone, OtherValue: Clone>
+impl<Key: Hash + Eq + Clone, Value: Set<Empty = Value>, OtherValue: Clone>
     UnionAssign<&HashMap<Key, OtherValue>> for WildcardHashMap<Key, Value>
 where
     for<'a> Value: DifferenceAssign<&'a Value>
-        + Intersection<&'a OtherValue, Output = Value>
-        + UnionAssign<&'a OtherValue>
-        + From<OtherValue>,
+        + IntersectionAssign<&'a OtherValue>
+        + UnionAssign<&'a OtherValue>,
     for<'a> OtherValue: DifferenceAssign<&'a Value>,
-    for<'a> HashMap<Key, Value>: Intersection<&'a HashMap<Key, OtherValue>>,
 {
     fn union_assign(&mut self, rhs: &HashMap<Key, OtherValue>) {
         for (key, value) in rhs.iter() {
             //For each key, for the intersection that is covered by the wildcard and value, remove it from the exceptions for this key.
             //For the rest (that is not part of the intersection), add it to the rest list.
-            let wildcard_value = self.wildcard_value.clone().intersection(value);
+            self.wildcard_value.intersection_assign(value);
 
             let mut rest = value.clone();
 
-            rest.difference_assign(&wildcard_value);
+            rest.difference_assign(&self.wildcard_value);
 
-            if !wildcard_value.is_empty() {
+            if !self.wildcard_value.is_empty() {
                 let mut remove: bool = false;
                 if let Some(val) = self.wildcard_exceptions.get_mut(key) {
-                    val.difference_assign(&wildcard_value);
+                    val.difference_assign(&self.wildcard_value);
 
                     remove = val.is_empty();
                 };
@@ -82,50 +80,47 @@ where
             if !rest.is_empty() {
                 self.rest_list
                     .entry(key.clone())
-                    .and_modify(|entry| entry.union_assign(&rest))
-                    .or_insert(rest.into());
+                    .or_insert_with(|| Value::empty())
+                    .union_assign(&rest);
             }
         }
     }
 }
 
-impl<
-    Key: Hash + Eq + Clone,
-    Value: Set<Empty = Value> + Clone,
-    OtherValue: Set<Empty = OtherValue> + Clone,
-> DifferenceAssign<&HashMap<Key, OtherValue>> for WildcardHashMap<Key, Value>
+impl<Key: Hash + Eq + Clone, Value: Set<Empty = Value>, OtherValue: Set<Empty = OtherValue>>
+    DifferenceAssign<&HashMap<Key, OtherValue>> for WildcardHashMap<Key, Value>
 where
     for<'a> Value: DifferenceAssign<&'a OtherValue>
-        + Intersection<&'a OtherValue, Output = Value>
+        + IntersectionAssign<&'a OtherValue>
         + UnionAssign<&'a Value>,
 {
     fn difference_assign(&mut self, rhs: &HashMap<Key, OtherValue>) {
         self.rest_list.difference_assign(rhs);
 
         for (key, value) in rhs.iter() {
-            let wildcard_value = self.wildcard_value.clone().intersection(value);
+            self.wildcard_value.intersection_assign(value);
 
             // Whatever intersection exists between the wildcard and the value of a key should be inserted as an exception on that key.
-            if !wildcard_value.is_empty() {
+            if !self.wildcard_value.is_empty() {
                 self.wildcard_exceptions
                     .entry(key.clone())
-                    .and_modify(|entry| entry.union_assign(&wildcard_value))
-                    .or_insert(*wildcard_value);
+                    .or_insert_with(|| Value::empty())
+                    .union_assign(&self.wildcard_value);
             }
         }
     }
 }
 
 // WildcardList A <-> WildcardList B
-impl<
+impl<Key, Value, OtherValue> UnionAssign<&WildcardHashMap<Key, OtherValue>>
+    for WildcardHashMap<Key, Value>
+where
     Key: Hash + Eq + Clone,
     Value: Set<Empty = Value> + Clone,
-    OtherValue: Set<Empty = OtherValue> + Clone,
-> UnionAssign<&WildcardHashMap<Key, OtherValue>> for WildcardHashMap<Key, Value>
-where
     for<'a> Value: DifferenceAssign<&'a Value>
         + DifferenceAssign<&'a OtherValue>
         + UnionAssign<&'a OtherValue>,
+    OtherValue: Set<Empty = OtherValue> + Clone,
     for<'a> OtherValue: DifferenceAssign<&'a Value> + DifferenceAssign<&'a OtherValue>,
     for<'a> HashMap<Key, Value>: UnionAssign<&'a HashMap<Key, OtherValue>>,
 {
@@ -189,18 +184,17 @@ where
     }
 }
 
-impl<
+impl<Key, Value, OtherValue> DifferenceAssign<&WildcardHashMap<Key, OtherValue>>
+    for WildcardHashMap<Key, Value>
+where
     Key: Hash + Eq + Clone,
     Value: Set<Empty = Value> + Clone,
-    OtherValue: Set<Empty = OtherValue> + Clone,
-> DifferenceAssign<&WildcardHashMap<Key, OtherValue>> for WildcardHashMap<Key, Value>
-where
     for<'a> Value: DifferenceAssign<&'a Value>
         + DifferenceAssign<&'a OtherValue>
         + IntersectionAssign<&'a OtherValue>
         + UnionAssign<&'a OtherValue>
-        + UnionAssign<&'a Value>
-        + From<OtherValue>,
+        + UnionAssign<&'a Value>,
+    OtherValue: Set<Empty = OtherValue> + Clone,
     for<'a> OtherValue: IntersectionAssign<&'a Value>,
 {
     fn difference_assign(&mut self, rhs: &WildcardHashMap<Key, OtherValue>) {
@@ -241,11 +235,10 @@ where
                 continue;
             }
 
-            if let Some(exception) = self.wildcard_exceptions.get_mut(key) {
-                exception.union_assign(&value);
-            } else {
-                self.wildcard_exceptions.insert(key.clone(), value.into());
-            }
+            self.wildcard_exceptions
+                .entry(key.clone())
+                .or_insert_with(|| Value::empty())
+                .union_assign(&value);
         }
 
         self.rest_list.difference_assign(&rhs.rest_list);
