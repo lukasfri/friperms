@@ -42,7 +42,7 @@ pub trait IntersectionAssign<Rhs>: Set {
     fn intersection_assign(&mut self, rhs: Rhs);
 }
 
-/// SubsetCmp will check if Rhs contains Self.
+/// SubsetOf (⊆) will check if Rhs contains Self.
 pub trait SubsetOf<Rhs>: Set {
     fn subset_of(&self, rhs: &Rhs) -> bool;
 }
@@ -52,6 +52,7 @@ where
     for<'a> T: IntersectionAssign<&'a Rhs>,
 {
     fn subset_of(&self, rhs: &Rhs) -> bool {
+        // Formula: A ⊆ B if A ∩ B = A
         let mut intersection = self.clone();
 
         intersection.intersection_assign(rhs);
@@ -60,14 +61,14 @@ where
     }
 }
 
-/// SubsetCmp will check if Rhs contains Self.
+/// HasSubset will check if Rhs contains Self.
 pub trait HasSubset<Rhs>: Set {
     fn has_subset(&self, rhs: &Rhs) -> bool;
 }
 
 impl<T: Set, Rhs: SubsetOf<T>> HasSubset<Rhs> for T {
     fn has_subset(&self, rhs: &Rhs) -> bool {
-        Rhs::subset_of(rhs, self)
+        rhs.subset_of(self)
     }
 }
 

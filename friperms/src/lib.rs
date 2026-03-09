@@ -13,7 +13,7 @@ pub use set::{
 mod impls;
 
 mod wildcards;
-pub use wildcards::WildcardHashMap;
+pub use wildcards::{WildcardBTreeMap, WildcardHashMap};
 
 #[cfg(feature = "derive")]
 pub use friperms_derive::*;
