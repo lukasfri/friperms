@@ -1,16 +1,24 @@
-use crate::{DifferenceAssign, IntersectionAssign, Set, UnionAssign};
+use crate::{Difference, DifferenceAssign, IntersectionAssign, Set, Union, UnionAssign};
 use std::{collections::HashMap, hash::Hash, ops::Deref};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 /// Set-variation of a key-value list with optional wildcard. Does operations on sub-values based on key.
 pub struct WildcardHashMap<Key: Hash + Eq + Clone, Value: Set> {
-    pub wildcard_exceptions: HashMap<Key, Value>,
-    pub wildcard_value: Box<Value>,
-    pub rest_list: HashMap<Key, Value>,
+    wildcard_exceptions: HashMap<Key, Value>,
+    wildcard_value: Box<Value>,
+    rest_list: HashMap<Key, Value>,
 }
 
-impl<Key: Hash + Eq + Clone, Value: Set> WildcardHashMap<Key, Value> {}
+impl<Key: Hash + Eq + Clone, Value: Set> WildcardHashMap<Key, Value> {
+    pub fn new(wildcard_value: Value) -> Self {
+        Self {
+            wildcard_exceptions: HashMap::empty(),
+            wildcard_value: Box::new(wildcard_value),
+            rest_list: HashMap::empty(),
+        }
+    }
+}
 
 impl<Key: Hash + Eq + Clone, Value: Set<Empty = Value>> Set for WildcardHashMap<Key, Value> {
     type Empty = Self;
@@ -87,6 +95,22 @@ where
     }
 }
 
+impl<Key: Hash + Eq + Clone, Value: Set<Empty = Value>, OtherValue: Clone>
+    Union<&HashMap<Key, OtherValue>> for WildcardHashMap<Key, Value>
+where
+    for<'a> Value: DifferenceAssign<&'a Value>
+        + IntersectionAssign<&'a OtherValue>
+        + UnionAssign<&'a OtherValue>,
+    for<'a> OtherValue: DifferenceAssign<&'a Value>,
+{
+    type Output = Self;
+
+    fn union(mut self, rhs: &HashMap<Key, OtherValue>) -> Self::Output {
+        self.union_assign(rhs);
+        self
+    }
+}
+
 impl<Key: Hash + Eq + Clone, Value: Set<Empty = Value>, OtherValue: Set<Empty = OtherValue>>
     DifferenceAssign<&HashMap<Key, OtherValue>> for WildcardHashMap<Key, Value>
 where
@@ -108,6 +132,21 @@ where
                     .union_assign(&self.wildcard_value);
             }
         }
+    }
+}
+
+impl<Key: Hash + Eq + Clone, Value: Set<Empty = Value>, OtherValue: Set<Empty = OtherValue>>
+    Difference<&HashMap<Key, OtherValue>> for WildcardHashMap<Key, Value>
+where
+    for<'a> Value: DifferenceAssign<&'a OtherValue>
+        + IntersectionAssign<&'a OtherValue>
+        + UnionAssign<&'a Value>,
+{
+    type Output = Self;
+
+    fn difference(mut self, rhs: &HashMap<Key, OtherValue>) -> Self::Output {
+        self.difference_assign(rhs);
+        self
     }
 }
 
@@ -184,6 +223,26 @@ where
     }
 }
 
+impl<Key, Value, OtherValue> Union<&WildcardHashMap<Key, OtherValue>>
+    for WildcardHashMap<Key, Value>
+where
+    Key: Hash + Eq + Clone,
+    Value: Set<Empty = Value> + Clone,
+    for<'a> Value: DifferenceAssign<&'a Value>
+        + DifferenceAssign<&'a OtherValue>
+        + UnionAssign<&'a OtherValue>,
+    OtherValue: Set<Empty = OtherValue> + Clone,
+    for<'a> OtherValue: DifferenceAssign<&'a Value> + DifferenceAssign<&'a OtherValue>,
+    for<'a> HashMap<Key, Value>: UnionAssign<&'a HashMap<Key, OtherValue>>,
+{
+    type Output = Self;
+
+    fn union(mut self, rhs: &WildcardHashMap<Key, OtherValue>) -> Self::Output {
+        self.union_assign(rhs);
+        self
+    }
+}
+
 impl<Key, Value, OtherValue> DifferenceAssign<&WildcardHashMap<Key, OtherValue>>
     for WildcardHashMap<Key, Value>
 where
@@ -242,6 +301,27 @@ where
         }
 
         self.rest_list.difference_assign(&rhs.rest_list);
+    }
+}
+
+impl<Key, Value, OtherValue> Difference<&WildcardHashMap<Key, OtherValue>>
+    for WildcardHashMap<Key, Value>
+where
+    Key: Hash + Eq + Clone,
+    Value: Set<Empty = Value> + Clone,
+    for<'a> Value: DifferenceAssign<&'a Value>
+        + DifferenceAssign<&'a OtherValue>
+        + IntersectionAssign<&'a OtherValue>
+        + UnionAssign<&'a OtherValue>
+        + UnionAssign<&'a Value>,
+    OtherValue: Set<Empty = OtherValue> + Clone,
+    for<'a> OtherValue: IntersectionAssign<&'a Value>,
+{
+    type Output = Self;
+
+    fn difference(mut self, rhs: &WildcardHashMap<Key, OtherValue>) -> Self::Output {
+        self.difference_assign(rhs);
+        self
     }
 }
 
@@ -547,5 +627,50 @@ mod tests {
         list1.difference_assign(&list2);
 
         assert_eq!(list1, result);
+    }
+
+    #[test]
+    fn test_add() {
+        let tree_1 = hashmap! {
+            1 => WildcardHashMap {
+                rest_list: hashmap! {},
+                wildcard_exceptions: hashmap! {},
+                wildcard_value: Box::new(hashmap! {
+                    15 => true,
+                })
+            }
+        };
+
+        let tree_2 = hashmap! {
+            1 => hashmap! {
+                5 => hashmap! {
+                    15 => true,
+                    5 => true,
+                },
+            },
+        };
+
+        let mut tree_1_minus_2 = tree_1.clone();
+        tree_1_minus_2.difference_assign(&tree_2);
+
+        let result = hashmap! {
+          1 => WildcardHashMap {
+            rest_list: hashmap! {},
+            wildcard_exceptions: hashmap! {
+                5 => hashmap! {
+                    15 => true,
+                },
+            },
+            wildcard_value: Box::new(hashmap! {
+                15 => true,
+            }),
+          }
+        };
+
+        assert_eq!(tree_1_minus_2, result);
+
+        tree_1_minus_2.union_assign(&tree_2);
+        //Does not equal tree_1 because 1.5.5 has been added.
+        assert_ne!(tree_1, tree_1_minus_2);
     }
 }
