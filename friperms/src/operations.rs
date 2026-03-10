@@ -1,10 +1,9 @@
-/// The most basic trait that all sets must have to be able to have operations, since most require them.
-pub trait Set {
-    type Empty;
+use crate::Set;
 
-    fn is_empty(&self) -> bool;
-    fn empty() -> Self::Empty;
-}
+#[cfg(feature = "derive")]
+pub use friperms_derive::{
+    DifferenceAssign, DisjunctiveUnionAssign, IntersectionAssign, UnionAssign,
+};
 
 /// Union (denoted by ∪) is the sum of two sets. Union is a symmetric relation, which means that A ∪ B must equal B ∪ A.
 pub trait Union<Rhs>: Set {
@@ -40,36 +39,6 @@ pub trait Intersection<Rhs>: Set {
 /// IntersectionAssign is the in-place version of the Intersection trait.
 pub trait IntersectionAssign<Rhs>: Set {
     fn intersection_assign(&mut self, rhs: Rhs);
-}
-
-/// SubsetOf (⊆) will check if Rhs contains Self.
-pub trait SubsetOf<Rhs>: Set {
-    fn subset_of(&self, rhs: &Rhs) -> bool;
-}
-
-impl<T: Clone + PartialEq, Rhs> SubsetOf<Rhs> for T
-where
-    for<'a> T: IntersectionAssign<&'a Rhs>,
-{
-    fn subset_of(&self, rhs: &Rhs) -> bool {
-        // Formula: A ⊆ B if A ∩ B = A
-        let mut intersection = self.clone();
-
-        intersection.intersection_assign(rhs);
-
-        intersection == *self
-    }
-}
-
-/// HasSubset will check if Rhs contains Self.
-pub trait HasSubset<Rhs>: Set {
-    fn has_subset(&self, rhs: &Rhs) -> bool;
-}
-
-impl<T: Set, Rhs: SubsetOf<T>> HasSubset<Rhs> for T {
-    fn has_subset(&self, rhs: &Rhs) -> bool {
-        rhs.subset_of(self)
-    }
 }
 
 // DisjunctiveUnion (denoted by⊖)

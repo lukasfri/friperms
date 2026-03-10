@@ -1,4 +1,5 @@
-use crate::{Difference, DifferenceAssign, IntersectionAssign, Set, Union, UnionAssign};
+use crate::Set;
+use crate::operations::{Difference, DifferenceAssign, IntersectionAssign, Union, UnionAssign};
 use std::{collections::HashMap, hash::Hash, ops::Deref};
 
 #[derive(Debug, Clone, PartialEq, Eq)]

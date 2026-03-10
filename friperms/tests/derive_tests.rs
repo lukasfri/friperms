@@ -1,4 +1,4 @@
-use friperms::{Set, UnionAssign};
+use friperms::{Set, operations::UnionAssign};
 use friperms_derive::{DifferenceAssign, IntersectionAssign, Set, UnionAssign};
 
 #[derive(Set, UnionAssign, DifferenceAssign, IntersectionAssign, PartialEq, Debug)]
@@ -31,22 +31,58 @@ fn derive_test_empty() {
     assert_eq!(Test1::empty(), value1);
 }
 
-#[test]
-fn derive_test() {
-    let mut value1 = Test1 {
-        field1: false,
-        field2: true,
-    };
-    let value2 = Test1 {
-        field1: true,
-        field2: false,
-    };
-
-    value1.union_assign(&value2);
-
-    let result = Test1 {
-        field1: true,
-        field2: true,
-    };
-    assert_eq!(value1, result);
+#[rstest::rstest]
+#[case::both_false(Test1 {
+    field1: false,
+    field2: false,
+}, Test1 {
+    field1: false,
+    field2: false,
+}, Test1 {
+    field1: false,
+    field2: false,
+})]
+#[case::self_empty(Test1 {
+    field1: false,
+    field2: false,
+}, Test1 {
+    field1: true,
+    field2: true,
+}, Test1 {
+    field1: true,
+    field2: true,
+})]
+#[case::rhs_empty(Test1 {
+    field1: true,
+    field2: true,
+}, Test1 {
+    field1: false,
+    field2: false,
+}, Test1 {
+    field1: true,
+    field2: true,
+})]
+#[case::both_true(Test1 {
+    field1: true,
+    field2: true,
+}, Test1 {
+    field1: true,
+    field2: true,
+}, Test1 {
+    field1: true,
+    field2: true,
+})]
+#[case::combination(Test1 {
+    field1: true,
+    field2: false,
+}, Test1 {
+    field1: false,
+    field2: true,
+}, Test1 {
+    field1: true,
+    field2: true,
+})]
+fn derive_test(#[case] mut a: Test1, #[case] b: Test1, #[case] c: Test1) {
+    a.union_assign(&b);
+    assert_eq!(a, c);
 }

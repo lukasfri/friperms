@@ -1,5 +1,6 @@
-use crate::{
-    DifferenceAssign, DisjunctiveUnionAssign, Intersection, IntersectionAssign, Set, UnionAssign,
+use crate::Set;
+use crate::operations::{
+    DifferenceAssign, DisjunctiveUnionAssign, Intersection, IntersectionAssign, UnionAssign,
 };
 
 impl<Value: Set> Set for Option<Value> {

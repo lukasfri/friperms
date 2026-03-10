@@ -1,7 +1,8 @@
 use std::collections::BTreeMap;
 
-use crate::{
-    DifferenceAssign, DisjunctiveUnionAssign, Intersection, IntersectionAssign, Set, UnionAssign,
+use crate::Set;
+use crate::operations::{
+    DifferenceAssign, DisjunctiveUnionAssign, Intersection, IntersectionAssign, UnionAssign,
 };
 
 pub(crate) fn remove_empty_keys<K: Ord, V: Set>(map: &mut BTreeMap<K, V>) {

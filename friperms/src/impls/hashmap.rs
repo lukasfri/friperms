@@ -1,8 +1,9 @@
 use std::collections::HashMap;
 pub use std::hash::Hash;
 
-use crate::{
-    DifferenceAssign, DisjunctiveUnionAssign, Intersection, IntersectionAssign, Set, UnionAssign,
+use crate::Set;
+use crate::operations::{
+    DifferenceAssign, DisjunctiveUnionAssign, Intersection, IntersectionAssign, UnionAssign,
 };
 
 pub(crate) fn remove_empty_keys<K, V: Set>(map: &mut HashMap<K, V>) {

@@ -1,6 +1,7 @@
-use crate::{
-    Difference, DisjunctiveUnion, DisjunctiveUnionAssign, Intersection, Set, Union,
-    set::{DifferenceAssign, IntersectionAssign, UnionAssign},
+use crate::Set;
+use crate::operations::{
+    Difference, DifferenceAssign, DisjunctiveUnion, DisjunctiveUnionAssign, Intersection,
+    IntersectionAssign, Union, UnionAssign,
 };
 
 //Set with a single value.

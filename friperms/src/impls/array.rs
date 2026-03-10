@@ -1,6 +1,7 @@
-use crate::{
+use crate::Set;
+use crate::operations::{
     Difference, DifferenceAssign, DisjunctiveUnion, DisjunctiveUnionAssign, Intersection,
-    IntersectionAssign, Set, Union, UnionAssign,
+    IntersectionAssign, Union, UnionAssign,
 };
 
 impl<const N: usize, Value: Set<Empty = Value>> Set for [Value; N] {
@@ -125,7 +126,7 @@ mod tests {
 
     use rstest::*;
 
-    use crate::Union;
+    use crate::operations::Union;
 
     #[allow(unused_imports)]
     use super::*;

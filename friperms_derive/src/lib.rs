@@ -109,7 +109,7 @@ pub fn union_in_place_derive_method(input: TokenStream) -> TokenStream {
             .map(|field| {
                 let field_name = field.ident.as_ref().expect("Struct is named.");
                 quote! {
-                    ::friperms::UnionAssign::union_assign(&mut self.#field_name, &rhs.#field_name);
+                    ::friperms::operations::UnionAssign::union_assign(&mut self.#field_name, &rhs.#field_name);
                 }
             })
             .collect(),
@@ -119,7 +119,7 @@ pub fn union_in_place_derive_method(input: TokenStream) -> TokenStream {
             .enumerate()
             .map(|(i, _field)| {
                 quote! {
-                    ::friperms::UnionAssign::union_assign(&mut self.#i, &rhs.#i);
+                    ::friperms::operations::UnionAssign::union_assign(&mut self.#i, &rhs.#i);
                 }
             })
             .collect(),
@@ -132,7 +132,7 @@ pub fn union_in_place_derive_method(input: TokenStream) -> TokenStream {
         .expect("No unit structs means there must be atleast 1 field.");
 
     quote! {
-        impl ::friperms::UnionAssign<&#struct_name> for #struct_name {
+        impl ::friperms::operations::UnionAssign<&#struct_name> for #struct_name {
             fn union_assign(&mut self, rhs: &#struct_name) {
                 #function_body
             }
@@ -159,7 +159,7 @@ pub fn difference_in_place_derive_method(input: TokenStream) -> TokenStream {
             .map(|field| {
                 let field_name = field.ident.as_ref().expect("Struct is named.");
                 quote! {
-                    ::friperms::DifferenceAssign::difference_assign(&mut self.#field_name, &rhs.#field_name);
+                    ::friperms::operations::DifferenceAssign::difference_assign(&mut self.#field_name, &rhs.#field_name);
                 }
             })
             .collect(),
@@ -169,7 +169,7 @@ pub fn difference_in_place_derive_method(input: TokenStream) -> TokenStream {
             .enumerate()
             .map(|(i, _field)| {
                 quote! {
-                    ::friperms::DifferenceAssign::difference_assign(&mut self.#i, &rhs.#i);
+                    ::friperms::operations::DifferenceAssign::difference_assign(&mut self.#i, &rhs.#i);
                 }
             })
             .collect(),
@@ -182,7 +182,7 @@ pub fn difference_in_place_derive_method(input: TokenStream) -> TokenStream {
         .expect("No unit structs means there must be atleast 1 field.");
 
     quote! {
-        impl ::friperms::DifferenceAssign<&#struct_name> for #struct_name {
+        impl ::friperms::operations::DifferenceAssign<&#struct_name> for #struct_name {
             fn difference_assign(&mut self, rhs: &#struct_name) {
                 #function_body
             }
@@ -209,7 +209,7 @@ pub fn intersection_in_place_derive_method(input: TokenStream) -> TokenStream {
             .map(|field| {
                 let field_name = field.ident.as_ref().expect("Struct is named.");
                 quote! {
-                    ::friperms::IntersectionAssign::intersection_assign(&mut self.#field_name, &rhs.#field_name);
+                    ::friperms::operations::IntersectionAssign::intersection_assign(&mut self.#field_name, &rhs.#field_name);
                 }
             })
             .collect(),
@@ -219,7 +219,7 @@ pub fn intersection_in_place_derive_method(input: TokenStream) -> TokenStream {
             .enumerate()
             .map(|(i, _field)| {
                 quote! {
-                    ::friperms::IntersectionAssign::intersection_assign(&mut self.#i, &rhs.#i);
+                    ::friperms::operations::IntersectionAssign::intersection_assign(&mut self.#i, &rhs.#i);
                 }
             })
             .collect(),
@@ -232,7 +232,7 @@ pub fn intersection_in_place_derive_method(input: TokenStream) -> TokenStream {
         .expect("No unit structs means there must be atleast 1 field.");
 
     quote! {
-        impl ::friperms::IntersectionAssign<&#struct_name> for #struct_name {
+        impl ::friperms::operations::IntersectionAssign<&#struct_name> for #struct_name {
             fn intersection_assign(&mut self, rhs: &#struct_name) {
                 #function_body
             }
@@ -259,7 +259,7 @@ pub fn disjunctive_union_in_place_derive_method(input: TokenStream) -> TokenStre
             .map(|field| {
                 let field_name = field.ident.as_ref().expect("Struct is named.");
                 quote! {
-                    ::friperms::DisjunctiveUnionAssign::disjunctive_union_assign(&mut self.#field_name, &rhs.#field_name);
+                    ::friperms::operations::DisjunctiveUnionAssign::disjunctive_union_assign(&mut self.#field_name, &rhs.#field_name);
                 }
             })
             .collect(),
@@ -269,7 +269,7 @@ pub fn disjunctive_union_in_place_derive_method(input: TokenStream) -> TokenStre
             .enumerate()
             .map(|(i, _field)| {
                 quote! {
-                    ::friperms::DisjunctiveUnionAssign::disjunctive_union_assign(&mut self.#i, &rhs.#i);
+                    ::friperms::operations::DisjunctiveUnionAssign::disjunctive_union_assign(&mut self.#i, &rhs.#i);
                 }
             })
             .collect(),
@@ -282,7 +282,7 @@ pub fn disjunctive_union_in_place_derive_method(input: TokenStream) -> TokenStre
         .expect("No unit structs means there must be atleast 1 field.");
 
     quote! {
-        impl ::friperms::DisjunctiveUnionAssign<&#struct_name> for #struct_name {
+        impl ::friperms::operations::DisjunctiveUnionAssign<&#struct_name> for #struct_name {
             fn disjunctive_union_assign(&mut self, rhs: &#struct_name) {
                 #function_body
             }

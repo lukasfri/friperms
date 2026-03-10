@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
-use friperms::{Set, SubsetOf};
+use friperms::comparisons::SubsetOf;
+use friperms::{Set, set_eq_partial_eq_impl};
 use friperms_derive::{
     DifferenceAssign, DisjunctiveUnionAssign, IntersectionAssign, Set, UnionAssign,
 };
@@ -20,6 +21,7 @@ pub struct ThemingPerms {
     can_have_dark_mode: bool,
     allowed_themes: HashMap<String, bool>,
 }
+set_eq_partial_eq_impl!(ThemingPerms);
 
 #[derive(
     Debug,
@@ -36,6 +38,7 @@ pub struct ClanPerms {
     ban: bool,
     owner: bool,
 }
+set_eq_partial_eq_impl!(ClanPerms);
 
 #[derive(
     Debug,
@@ -52,6 +55,7 @@ pub struct UserPerms {
     clans: HashMap<String, ClanPerms>,
     account_access: bool,
 }
+set_eq_partial_eq_impl!(UserPerms);
 
 impl UserPerms {
     fn is_owner_of_clan(&self, clan_name: String) -> bool {
