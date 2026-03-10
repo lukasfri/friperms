@@ -28,7 +28,7 @@ where
             return;
         }
 
-        let value = self.get_or_insert_with(|| Value::empty());
+        let value = self.get_or_insert_with(Value::empty);
 
         value.union_assign(rhs);
 
@@ -52,7 +52,7 @@ where
             return;
         }
 
-        let value = self.get_or_insert_with(|| Value::empty());
+        let value = self.get_or_insert_with(Value::empty);
 
         value.difference_assign(rhs);
 

@@ -88,7 +88,7 @@ where
             if !rest.is_empty() {
                 self.rest_list
                     .entry(key.clone())
-                    .or_insert_with(|| Value::empty())
+                    .or_insert_with(Value::empty)
                     .union_assign(&rest);
             }
         }
@@ -128,7 +128,7 @@ where
             if !self.wildcard_value.is_empty() {
                 self.wildcard_exceptions
                     .entry(key.clone())
-                    .or_insert_with(|| Value::empty())
+                    .or_insert_with(Value::empty)
                     .union_assign(&self.wildcard_value);
             }
         }
@@ -296,7 +296,7 @@ where
 
             self.wildcard_exceptions
                 .entry(key.clone())
-                .or_insert_with(|| Value::empty())
+                .or_insert_with(Value::empty)
                 .union_assign(&value);
         }
 
