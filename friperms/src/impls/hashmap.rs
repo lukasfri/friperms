@@ -118,7 +118,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use std::fmt::Debug;
+    use core::fmt::Debug;
 
     use maplit::hashmap;
     use rstest::*;

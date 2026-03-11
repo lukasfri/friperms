@@ -12,7 +12,7 @@ impl<const N: usize, Value: Set<Empty = Value>> Set for [Value; N] {
     }
 
     fn empty() -> Self::Empty {
-        std::array::from_fn(|_| Value::empty())
+        core::array::from_fn(|_| Value::empty())
     }
 }
 
@@ -122,7 +122,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use std::fmt::Debug;
+    use core::fmt::Debug;
 
     use rstest::*;
 

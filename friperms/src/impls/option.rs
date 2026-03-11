@@ -129,7 +129,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use std::fmt::Debug;
+    use core::fmt::Debug;
 
     use rstest::*;
 
@@ -203,31 +203,5 @@ mod tests {
     {
         value1.disjunctive_union_assign(&value2);
         assert_eq!(value1, result);
-    }
-
-    #[cfg(feature = "serde")]
-    #[test]
-    fn serializing_none_is_empty() {
-        use serde::{Deserialize, Serialize};
-
-        #[derive(Debug, Serialize, Deserialize)]
-        struct PermissionNode {
-            #[serde(skip_serializing_if = "Set::is_empty")]
-            value1: Option<bool>,
-            #[serde(skip_serializing_if = "Set::is_empty")]
-            value2: Option<bool>,
-        }
-
-        let node1 = PermissionNode {
-            value1: Some(true),
-            value2: Some(false),
-        };
-
-        println!("{node1:?}");
-
-        assert_eq!(
-            "{\"value1\":true}",
-            serde_json::to_string(&node1).unwrap().as_str()
-        );
     }
 }

@@ -1,3 +1,4 @@
+#![cfg_attr(not(feature = "std"), no_std)]
 //! A library for working with sets and their relationships, such as subsets, supersets, unions, intersections, etc. It provides traits for defining sets and their operations, as well as comparisons between sets.
 //!
 //! This library was originally designed to create a permission system, but it can be used for any kind of set operations and comparisons.
@@ -23,6 +24,7 @@ pub mod comparisons;
 mod impls;
 
 mod wildcards;
+#[cfg(feature = "std")]
 pub use wildcards::{WildcardBTreeMap, WildcardHashMap};
 
 #[cfg(feature = "derive")]
