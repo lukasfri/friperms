@@ -1,5 +1,5 @@
-use crate::Set;
 use crate::operations::{Difference, DifferenceAssign, IntersectionAssign, Union, UnionAssign};
+use crate::{Complement, Set, UniversalSet};
 use std::{collections::BTreeMap, ops::Deref};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -34,6 +34,34 @@ impl<Key: Ord + Eq + Clone, Value: Set<Empty = Value>> Set for WildcardBTreeMap<
             wildcard_value: Box::new(Value::empty()),
             rest_list: BTreeMap::empty(),
         }
+    }
+}
+
+impl<Key, Value> UniversalSet for WildcardBTreeMap<Key, Value>
+where
+    Key: Ord + Eq + Clone,
+    Value: Set<Empty = Value> + Clone,
+{
+    type Universal = Self;
+
+    fn is_universal(&self) -> bool {
+        todo!()
+    }
+
+    fn universal() -> Self::Universal {
+        todo!()
+    }
+}
+
+impl<Key, Value> Complement for WildcardBTreeMap<Key, Value>
+where
+    Key: Ord + Eq + Clone,
+    Value: Set<Empty = Value> + Clone,
+{
+    type Complement = Self;
+
+    fn complement(&self) -> Self::Complement {
+        todo!()
     }
 }
 

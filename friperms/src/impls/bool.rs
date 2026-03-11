@@ -1,8 +1,8 @@
-use crate::Set;
 use crate::operations::{
     Difference, DifferenceAssign, DisjunctiveUnion, DisjunctiveUnionAssign, Intersection,
     IntersectionAssign, Union, UnionAssign,
 };
+use crate::{Complement, Set, UniversalSet};
 
 //Set with a single value.
 impl Set for bool {
@@ -150,6 +150,46 @@ impl DisjunctiveUnionAssign<bool> for bool {
 impl DisjunctiveUnionAssign<&bool> for bool {
     fn disjunctive_union_assign(&mut self, rhs: &bool) {
         *self = self.disjunctive_union(*rhs);
+    }
+}
+
+impl UniversalSet for bool {
+    type Universal = Self;
+
+    fn is_universal(&self) -> bool {
+        *self
+    }
+
+    fn universal() -> Self::Universal {
+        true
+    }
+}
+
+impl UniversalSet for &bool {
+    type Universal = bool;
+
+    fn is_universal(&self) -> bool {
+        (**self).is_universal()
+    }
+
+    fn universal() -> Self::Universal {
+        bool::universal()
+    }
+}
+
+impl Complement for bool {
+    type Complement = Self;
+
+    fn complement(&self) -> Self::Complement {
+        !*self
+    }
+}
+
+impl Complement for &bool {
+    type Complement = bool;
+
+    fn complement(&self) -> Self::Complement {
+        (**self).complement()
     }
 }
 

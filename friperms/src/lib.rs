@@ -15,6 +15,19 @@ pub trait Set {
     fn empty() -> Self::Empty;
 }
 
+pub trait UniversalSet: Set {
+    type Universal;
+
+    fn is_universal(&self) -> bool;
+    fn universal() -> Self::Universal;
+}
+
+pub trait Complement: Set {
+    type Complement;
+
+    fn complement(&self) -> Self::Complement;
+}
+
 #[cfg(feature = "derive")]
 pub use friperms_derive::Set;
 

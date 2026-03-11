@@ -1,5 +1,5 @@
-use crate::Set;
 use crate::operations::{Difference, DifferenceAssign, IntersectionAssign, Union, UnionAssign};
+use crate::{Complement, Set, UniversalSet};
 use std::{collections::HashMap, hash::Hash, ops::Deref};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -34,6 +34,34 @@ impl<Key: Hash + Eq + Clone, Value: Set<Empty = Value>> Set for WildcardHashMap<
             wildcard_value: Box::new(Value::empty()),
             rest_list: HashMap::empty(),
         }
+    }
+}
+
+impl<Key, Value> UniversalSet for WildcardHashMap<Key, Value>
+where
+    Key: Hash + Eq + Clone,
+    Value: Set<Empty = Value> + Clone,
+{
+    type Universal = Self;
+
+    fn is_universal(&self) -> bool {
+        todo!()
+    }
+
+    fn universal() -> Self::Universal {
+        todo!()
+    }
+}
+
+impl<Key, Value> Complement for WildcardHashMap<Key, Value>
+where
+    Key: Hash + Eq + Clone,
+    Value: Set<Empty = Value> + Clone,
+{
+    type Complement = Self;
+
+    fn complement(&self) -> Self::Complement {
+        todo!()
     }
 }
 

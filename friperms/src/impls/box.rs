@@ -1,8 +1,8 @@
-use crate::Set;
 use crate::operations::{
     Difference, DifferenceAssign, DisjunctiveUnion, DisjunctiveUnionAssign, Intersection,
     IntersectionAssign, Union, UnionAssign,
 };
+use crate::{Complement, Set, UniversalSet};
 
 impl<Value: Set> Set for Box<Value> {
     type Empty = Box<Value::Empty>;
@@ -94,5 +94,25 @@ where
 
     fn disjunctive_union(self, rhs: OtherValue) -> Self::Output {
         Box::new((*self).disjunctive_union(rhs))
+    }
+}
+
+impl<Value: UniversalSet> UniversalSet for Box<Value> {
+    type Universal = Box<Value::Universal>;
+
+    fn is_universal(&self) -> bool {
+        self.as_ref().is_universal()
+    }
+
+    fn universal() -> Self::Universal {
+        Box::new(Value::universal())
+    }
+}
+
+impl<Value: Complement> Complement for Box<Value> {
+    type Complement = Box<Value::Complement>;
+
+    fn complement(&self) -> Self::Complement {
+        Box::new(self.as_ref().complement())
     }
 }

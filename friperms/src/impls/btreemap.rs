@@ -1,3 +1,5 @@
+//! This module contains implementations of set-traits for `BTreeMap`. Of note is the lack of [`UniversalSet`] and [`Complement`] implementations, since they can't be implemented sensibly. Instead, you can use [`WildcardBTreeMap`] from the [`collections`] module, which has wildcard values which solve the problem of universal sets and complements.
+
 use std::collections::BTreeMap;
 
 use crate::Set;

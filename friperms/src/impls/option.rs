@@ -1,7 +1,7 @@
-use crate::Set;
 use crate::operations::{
     DifferenceAssign, DisjunctiveUnionAssign, Intersection, IntersectionAssign, UnionAssign,
 };
+use crate::{Complement, Set, UniversalSet};
 
 impl<Value: Set> Set for Option<Value> {
     type Empty = Self;
@@ -124,6 +124,41 @@ where
         } else {
             *self = Some(other_value.clone().into());
         }
+    }
+}
+
+impl<Value: UniversalSet> UniversalSet for Option<Value> {
+    type Universal = Option<Value::Universal>;
+
+    fn universal() -> Self::Universal {
+        Some(Value::universal())
+    }
+
+    fn is_universal(&self) -> bool {
+        self.as_ref().is_some_and(|value| value.is_universal())
+    }
+}
+
+impl<Value> Complement for Option<Value>
+where
+    Value: Complement + UniversalSet<Universal = <Value as Complement>::Complement>,
+    Value::Complement: Set<Empty = Value::Complement>,
+{
+    type Complement = Option<Value::Complement>;
+
+    fn complement(&self) -> Self::Complement {
+        self.as_ref().map_or_else(
+            || Some(Value::universal()),
+            |value| {
+                let complement = value.complement();
+
+                if complement.is_empty() {
+                    None
+                } else {
+                    Some(complement)
+                }
+            },
+        )
     }
 }
 

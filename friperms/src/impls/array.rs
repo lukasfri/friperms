@@ -1,11 +1,11 @@
-use crate::Set;
 use crate::operations::{
     Difference, DifferenceAssign, DisjunctiveUnion, DisjunctiveUnionAssign, Intersection,
     IntersectionAssign, Union, UnionAssign,
 };
+use crate::{Complement, Set, UniversalSet};
 
-impl<const N: usize, Value: Set<Empty = Value>> Set for [Value; N] {
-    type Empty = Self;
+impl<const N: usize, Value: Set> Set for [Value; N] {
+    type Empty = [Value::Empty; N];
 
     fn is_empty(&self) -> bool {
         self.iter().all(|value| value.is_empty())
@@ -117,6 +117,26 @@ where
         self.disjunctive_union_assign(rhs);
 
         self
+    }
+}
+
+impl<const N: usize, Value: UniversalSet> UniversalSet for [Value; N] {
+    type Universal = [Value::Universal; N];
+
+    fn universal() -> Self::Universal {
+        core::array::from_fn(|_| Value::universal())
+    }
+
+    fn is_universal(&self) -> bool {
+        self.iter().all(|value| value.is_universal())
+    }
+}
+
+impl<const N: usize, Value: Complement> Complement for [Value; N] {
+    type Complement = [Value::Complement; N];
+
+    fn complement(&self) -> Self::Complement {
+        core::array::from_fn(|i| self[i].complement())
     }
 }
 
