@@ -15,6 +15,9 @@ pub trait Set {
     fn empty() -> Self::Empty;
 }
 
+#[cfg(feature = "derive")]
+pub use friperms_derive::Set;
+
 #[macro_use]
 pub mod operations;
 
@@ -24,8 +27,8 @@ pub mod comparisons;
 mod impls;
 
 mod wildcards;
-#[cfg(feature = "std")]
-pub use wildcards::{WildcardBTreeMap, WildcardHashMap};
 
-#[cfg(feature = "derive")]
-pub use friperms_derive::Set;
+pub mod collections {
+    #[cfg(feature = "std")]
+    pub use super::wildcards::{WildcardBTreeMap, WildcardHashMap};
+}

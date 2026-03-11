@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 
 use friperms::comparisons::SubsetOf;
-use friperms::{Set, set_eq_partial_eq_impl};
-use friperms_derive::{
-    DifferenceAssign, DisjunctiveUnionAssign, IntersectionAssign, Set, UnionAssign,
+use friperms::operations::{
+    DifferenceAssign, DisjunctiveUnionAssign, IntersectionAssign, UnionAssign,
 };
+use friperms::{Set, set_eq_partial_eq_impl};
 use maplit::hashmap;
 
 #[derive(
