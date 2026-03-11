@@ -1,5 +1,7 @@
 use crate::Set;
-use crate::operations::{Difference, DifferenceAssign, IntersectionAssign, Union, UnionAssign};
+use crate::operations::{
+    Difference, DifferenceAssign, DisjunctiveUnionAssign, IntersectionAssign, Union, UnionAssign,
+};
 use std::{collections::BTreeMap, ops::Deref};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -323,6 +325,30 @@ where
     fn difference(mut self, rhs: &WildcardBTreeMap<Key, OtherValue>) -> Self::Output {
         self.difference_assign(rhs);
         self
+    }
+}
+
+impl<Key, Value, OtherValue> IntersectionAssign<&WildcardBTreeMap<Key, OtherValue>>
+    for WildcardBTreeMap<Key, Value>
+where
+    Key: Ord + Eq + Clone,
+    Value: Set<Empty = Value> + Clone,
+    OtherValue: Set<Empty = OtherValue> + Clone,
+{
+    fn intersection_assign(&mut self, rhs: &WildcardBTreeMap<Key, OtherValue>) {
+        todo!()
+    }
+}
+
+impl<Key, Value, OtherValue> DisjunctiveUnionAssign<&WildcardBTreeMap<Key, OtherValue>>
+    for WildcardBTreeMap<Key, Value>
+where
+    Key: Ord + Eq + Clone,
+    Value: Set<Empty = Value> + Clone,
+    OtherValue: Set<Empty = OtherValue> + Clone,
+{
+    fn disjunctive_union_assign(&mut self, rhs: &WildcardBTreeMap<Key, OtherValue>) {
+        todo!()
     }
 }
 

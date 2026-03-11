@@ -1,5 +1,7 @@
 use crate::Set;
-use crate::operations::{Difference, DifferenceAssign, IntersectionAssign, Union, UnionAssign};
+use crate::operations::{
+    Difference, DifferenceAssign, DisjunctiveUnionAssign, IntersectionAssign, Union, UnionAssign,
+};
 use std::{collections::HashMap, hash::Hash, ops::Deref};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -323,6 +325,30 @@ where
     fn difference(mut self, rhs: &WildcardHashMap<Key, OtherValue>) -> Self::Output {
         self.difference_assign(rhs);
         self
+    }
+}
+
+impl<Key, Value, OtherValue> IntersectionAssign<&WildcardHashMap<Key, OtherValue>>
+    for WildcardHashMap<Key, Value>
+where
+    Key: Hash + Eq + Clone,
+    Value: Set<Empty = Value> + Clone,
+    OtherValue: Set<Empty = OtherValue> + Clone,
+{
+    fn intersection_assign(&mut self, rhs: &WildcardHashMap<Key, OtherValue>) {
+        todo!()
+    }
+}
+
+impl<Key, Value, OtherValue> DisjunctiveUnionAssign<&WildcardHashMap<Key, OtherValue>>
+    for WildcardHashMap<Key, Value>
+where
+    Key: Hash + Eq + Clone,
+    Value: Set<Empty = Value> + Clone,
+    OtherValue: Set<Empty = OtherValue> + Clone,
+{
+    fn disjunctive_union_assign(&mut self, rhs: &WildcardHashMap<Key, OtherValue>) {
+        todo!()
     }
 }
 
