@@ -95,21 +95,12 @@ where
     for<'a> Value: DisjunctiveUnionAssign<&'a OtherValue>,
 {
     fn disjunctive_union_assign(&mut self, rhs: &HashMap<Key, OtherValue>) {
-        for (key, value) in self.iter_mut() {
-            let Some(other_value) = rhs.get(key) else {
-                continue;
-            };
-
-            value.disjunctive_union_assign(other_value);
-        }
-
-        //For all keys that don't exist on self (but exist on rhs), add them.
-        for (key, value) in rhs.iter() {
-            if self.contains_key(key) {
-                continue;
+        for (key, other_value) in rhs.iter() {
+            if let Some(value) = self.get_mut(key) {
+                value.disjunctive_union_assign(other_value);
+            } else {
+                self.insert(key.clone(), other_value.clone().into());
             }
-
-            self.insert(key.clone(), value.clone().into());
         }
 
         remove_empty_keys(self);
