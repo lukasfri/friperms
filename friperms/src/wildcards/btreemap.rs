@@ -382,6 +382,33 @@ where
     }
 }
 
+impl<Key, Value, OtherValue> IntersectionAssign<WildcardBTreeMap<Key, OtherValue>>
+    for WildcardBTreeMap<Key, Value>
+where
+    Key: Ord + Eq + Clone,
+    Value: Set<Empty = Value> + Clone,
+    OtherValue: Set<Empty = OtherValue> + Clone,
+    for<'a> Self: IntersectionAssign<&'a WildcardBTreeMap<Key, OtherValue>>,
+{
+    fn intersection_assign(&mut self, rhs: WildcardBTreeMap<Key, OtherValue>) {
+        self.intersection_assign(&rhs);
+    }
+}
+
+impl<Key, Value, OtherValue> DisjunctiveUnionAssign<&WildcardBTreeMap<Key, OtherValue>>
+    for WildcardBTreeMap<Key, Value>
+where
+    Key: Ord + Eq + Clone,
+    Value: Set<Empty = Value> + Clone,
+    OtherValue: Set<Empty = OtherValue> + Clone,
+    Self: DisjunctiveUnionAssign<WildcardBTreeMap<Key, OtherValue>>,
+    WildcardBTreeMap<Key, OtherValue>: Clone,
+{
+    fn disjunctive_union_assign(&mut self, rhs: &WildcardBTreeMap<Key, OtherValue>) {
+        self.disjunctive_union_assign(rhs.clone());
+    }
+}
+
 impl<Key, Value, OtherValue> DisjunctiveUnionAssign<WildcardBTreeMap<Key, OtherValue>>
     for WildcardBTreeMap<Key, Value>
 where

@@ -381,6 +381,33 @@ where
     }
 }
 
+impl<Key, Value, OtherValue> IntersectionAssign<WildcardHashMap<Key, OtherValue>>
+    for WildcardHashMap<Key, Value>
+where
+    Key: Hash + Eq + Clone,
+    Value: Set<Empty = Value> + Clone,
+    OtherValue: Set<Empty = OtherValue> + Clone,
+    for<'a> Self: IntersectionAssign<&'a WildcardHashMap<Key, OtherValue>>,
+{
+    fn intersection_assign(&mut self, rhs: WildcardHashMap<Key, OtherValue>) {
+        self.intersection_assign(&rhs);
+    }
+}
+
+impl<Key, Value, OtherValue> DisjunctiveUnionAssign<&WildcardHashMap<Key, OtherValue>>
+    for WildcardHashMap<Key, Value>
+where
+    Key: Hash + Eq + Clone,
+    Value: Set<Empty = Value> + Clone,
+    OtherValue: Set<Empty = OtherValue> + Clone,
+    Self: DisjunctiveUnionAssign<WildcardHashMap<Key, OtherValue>>,
+    WildcardHashMap<Key, OtherValue>: Clone,
+{
+    fn disjunctive_union_assign(&mut self, rhs: &WildcardHashMap<Key, OtherValue>) {
+        self.disjunctive_union_assign(rhs.clone());
+    }
+}
+
 impl<Key, Value, OtherValue> DisjunctiveUnionAssign<WildcardHashMap<Key, OtherValue>>
     for WildcardHashMap<Key, Value>
 where
