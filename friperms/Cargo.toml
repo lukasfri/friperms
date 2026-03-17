@@ -8,6 +8,14 @@ license = "MIT OR Apache-2.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[[example]]
+name = "clans"
+required-features = ["derive"]
+
+[[test]]
+name = "derive_tests"
+required-features = ["derive"]
+
 [dependencies]
 friperms_derive = { path = "../friperms_derive", version = "^0.1.0", optional = true }
 serde = { version = "1.0", default-features = false, features = ["derive"], optional = true }
