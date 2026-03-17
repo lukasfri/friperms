@@ -1,4 +1,7 @@
 use crate::Set;
+use crate::operations::identity::{
+    disjunctive_union_using_difference_and_union, intersection_using_double_difference,
+};
 use crate::operations::{
     Difference, DifferenceAssign, DisjunctiveUnionAssign, IntersectionAssign, Union, UnionAssign,
 };
@@ -111,6 +114,18 @@ where
     fn union(mut self, rhs: &HashMap<Key, OtherValue>) -> Self::Output {
         self.union_assign(rhs);
         self
+    }
+}
+
+impl<Key: Hash + Eq + Clone, Value: Set<Empty = Value>, OtherValue: Clone>
+    Union<HashMap<Key, OtherValue>> for WildcardHashMap<Key, Value>
+where
+    for<'a> Self: Union<&'a HashMap<Key, OtherValue>, Output = Self>,
+{
+    type Output = Self;
+
+    fn union(self, rhs: HashMap<Key, OtherValue>) -> Self::Output {
+        self.union(&rhs)
     }
 }
 
@@ -246,6 +261,20 @@ where
     }
 }
 
+impl<Key, Value, OtherValue> Union<WildcardHashMap<Key, OtherValue>> for WildcardHashMap<Key, Value>
+where
+    Key: Hash + Eq + Clone,
+    Value: Set<Empty = Value> + Clone,
+    OtherValue: Set<Empty = OtherValue> + Clone,
+    for<'a> Self: Union<&'a WildcardHashMap<Key, OtherValue>, Output = Self>,
+{
+    type Output = Self;
+
+    fn union(self, rhs: WildcardHashMap<Key, OtherValue>) -> Self::Output {
+        self.union(&rhs)
+    }
+}
+
 impl<Key, Value, OtherValue> DifferenceAssign<&WildcardHashMap<Key, OtherValue>>
     for WildcardHashMap<Key, Value>
 where
@@ -312,13 +341,8 @@ impl<Key, Value, OtherValue> Difference<&WildcardHashMap<Key, OtherValue>>
 where
     Key: Hash + Eq + Clone,
     Value: Set<Empty = Value> + Clone,
-    for<'a> Value: DifferenceAssign<&'a Value>
-        + DifferenceAssign<&'a OtherValue>
-        + IntersectionAssign<&'a OtherValue>
-        + UnionAssign<&'a OtherValue>
-        + UnionAssign<&'a Value>,
     OtherValue: Set<Empty = OtherValue> + Clone,
-    for<'a> OtherValue: IntersectionAssign<&'a Value>,
+    for<'a> Self: DifferenceAssign<&'a WildcardHashMap<Key, OtherValue>>,
 {
     type Output = Self;
 
@@ -328,27 +352,46 @@ where
     }
 }
 
+impl<Key, Value, OtherValue> Difference<WildcardHashMap<Key, OtherValue>>
+    for WildcardHashMap<Key, Value>
+where
+    Key: Hash + Eq + Clone,
+    Value: Set<Empty = Value> + Clone,
+    OtherValue: Set<Empty = OtherValue> + Clone,
+    for<'a> Self: Difference<&'a WildcardHashMap<Key, OtherValue>, Output = Self>,
+{
+    type Output = Self;
+
+    fn difference(self, rhs: WildcardHashMap<Key, OtherValue>) -> Self::Output {
+        self.difference(&rhs)
+    }
+}
+
 impl<Key, Value, OtherValue> IntersectionAssign<&WildcardHashMap<Key, OtherValue>>
     for WildcardHashMap<Key, Value>
 where
     Key: Hash + Eq + Clone,
     Value: Set<Empty = Value> + Clone,
     OtherValue: Set<Empty = OtherValue> + Clone,
+    for<'a> Self: Difference<&'a WildcardHashMap<Key, OtherValue>, Output = Self>,
+    Self: Difference<Self, Output = Self>,
 {
     fn intersection_assign(&mut self, rhs: &WildcardHashMap<Key, OtherValue>) {
-        todo!()
+        *self = intersection_using_double_difference(self.clone(), rhs);
     }
 }
 
-impl<Key, Value, OtherValue> DisjunctiveUnionAssign<&WildcardHashMap<Key, OtherValue>>
+impl<Key, Value, OtherValue> DisjunctiveUnionAssign<WildcardHashMap<Key, OtherValue>>
     for WildcardHashMap<Key, Value>
 where
     Key: Hash + Eq + Clone,
     Value: Set<Empty = Value> + Clone,
     OtherValue: Set<Empty = OtherValue> + Clone,
+    Self: Difference<WildcardHashMap<Key, OtherValue>, Output = Self> + Union<Self, Output = Self>,
+    WildcardHashMap<Key, OtherValue>: Difference<Self, Output = Self>,
 {
-    fn disjunctive_union_assign(&mut self, rhs: &WildcardHashMap<Key, OtherValue>) {
-        todo!()
+    fn disjunctive_union_assign(&mut self, rhs: WildcardHashMap<Key, OtherValue>) {
+        *self = disjunctive_union_using_difference_and_union(self.clone(), rhs);
     }
 }
 
@@ -699,5 +742,114 @@ mod tests {
         tree_1_minus_2.union_assign(&tree_2);
         //Does not equal tree_1 because 1.5.5 has been added.
         assert_ne!(tree_1, tree_1_minus_2);
+    }
+
+    #[rstest]
+    #[case(WildcardHashMap::<i32, bool> {
+        wildcard_value: Box::new(true),
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {},
+    }, WildcardHashMap {
+        wildcard_value: Box::new(true),
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {},
+    }, WildcardHashMap {
+        wildcard_value: Box::new(true),
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {}
+    })]
+    #[case(WildcardHashMap {
+        wildcard_value: Box::new(true),
+        wildcard_exceptions: hashmap! {
+            1 => true,
+        },
+        rest_list: hashmap! {},
+    }, WildcardHashMap {
+        wildcard_value: Box::new(true),
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {},
+    }, WildcardHashMap {
+        wildcard_value: Box::new(true),
+        wildcard_exceptions: hashmap! {
+            1 => true,
+        },
+        rest_list: hashmap! {}
+    })]
+    #[case(WildcardHashMap {
+        wildcard_value: Box::new(true),
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {
+            1 => true,
+        },
+    }, WildcardHashMap {
+        wildcard_value: Box::new(false),
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {
+            1 => true,
+        },
+    }, WildcardHashMap {
+        wildcard_value: Box::new(false),
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {
+            1 => true,
+        }
+    })]
+    fn intersection_list_tests<I1, I2, R>(
+        #[case] mut list1: I1,
+        #[case] list2: I2,
+        #[case] result: R,
+    ) where
+        I1: PartialEq<R> + Debug,
+        I2: Debug,
+        R: Debug,
+        for<'a> I1: IntersectionAssign<&'a I2>,
+    {
+        list1.intersection_assign(&list2);
+        assert_eq!(list1, result);
+    }
+
+    #[rstest]
+    #[case(WildcardHashMap::<i32, bool> {
+        wildcard_value: Box::new(true),
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {},
+    }, WildcardHashMap {
+        wildcard_value: Box::new(true),
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {},
+    }, WildcardHashMap {
+        wildcard_value: Box::new(false),
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {}
+    })]
+    #[case(WildcardHashMap {
+        wildcard_value: Box::new(true),
+        wildcard_exceptions: hashmap! {
+            1 => true,
+        },
+        rest_list: hashmap! {},
+    }, WildcardHashMap {
+        wildcard_value: Box::new(false),
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {
+            1 => true,
+        },
+    }, WildcardHashMap {
+        wildcard_value: Box::new(true),
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {}
+    })]
+    fn disjunctive_union_list_tests<I1, I2, R>(
+        #[case] mut list1: I1,
+        #[case] list2: I2,
+        #[case] result: R,
+    ) where
+        I1: PartialEq<R> + Debug,
+        I2: Debug,
+        R: Debug,
+        I1: DisjunctiveUnionAssign<I2>,
+    {
+        list1.disjunctive_union_assign(list2);
+        assert_eq!(list1, result);
     }
 }
