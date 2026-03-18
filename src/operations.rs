@@ -3,9 +3,7 @@
 use crate::Set;
 
 #[cfg(feature = "derive")]
-pub use friperms_derive::{
-    DifferenceAssign, DisjunctiveUnionAssign, IntersectionAssign, UnionAssign,
-};
+pub use finit_derive::{DifferenceAssign, DisjunctiveUnionAssign, IntersectionAssign, UnionAssign};
 
 /// [`Union`] (denoted by ∪) is the sum of two sets. Union is a symmetric relation, which means that A ∪ B must equal B ∪ A.
 pub trait Union<Rhs>: Set {
@@ -55,6 +53,7 @@ pub trait DisjunctiveUnionAssign<Rhs>: Set {
     fn disjunctive_union_assign(&mut self, rhs: Rhs);
 }
 
+/// The [`identity`] submodule contains identities that can be used to implement some operations in terms of others.
 pub mod identity {
     /// A ∩ B = A - (A - B)
     pub fn intersection_using_double_difference<A, B>(
@@ -67,7 +66,7 @@ pub mod identity {
         a.clone().difference(a.difference(b))
     }
 
-    /// A Δ B = (A − B) ∪ (B − A)
+    /// A ⊖ B = (A − B) ∪ (B − A)
     pub fn disjunctive_union_using_difference_and_union<A, B>(
         a: A,
         b: B,

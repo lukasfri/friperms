@@ -1,5 +1,5 @@
-use friperms::Set;
-use friperms::operations::{DifferenceAssign, IntersectionAssign, UnionAssign};
+use finit::Set;
+use finit::operations::{DifferenceAssign, IntersectionAssign, UnionAssign};
 
 #[derive(Set, UnionAssign, DifferenceAssign, IntersectionAssign, PartialEq, Debug)]
 struct Test1 {
