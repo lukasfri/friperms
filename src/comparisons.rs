@@ -22,7 +22,7 @@ macro_rules! set_eq_partial_eq_impl {
 }
 
 /// [`SubsetOf`] (⊆) will check if Rhs contains Self. This is the opposite of [`SupersetOf`], so A ⊆ B if and only if B ⊇ A.
-pub trait SubsetOf<Rhs> {
+pub trait SubsetOf<Rhs = Self> {
     fn subset_of(&self, rhs: &Rhs) -> bool;
 }
 
@@ -36,7 +36,7 @@ where
 }
 
 /// [`StrictSubsetOf`] (⊂) will check if Rhs contains Self, but they cannot be equal. This is the opposite of [`StrictSupersetOf`], so A ⊂ B if and only if B ⊃ A.
-pub trait StrictSubsetOf<Rhs> {
+pub trait StrictSubsetOf<Rhs = Self> {
     fn strict_subset_of(&self, rhs: &Rhs) -> bool;
 }
 
@@ -47,7 +47,7 @@ impl<T: SubsetOf<Rhs> + SetEq<Rhs>, Rhs> StrictSubsetOf<Rhs> for T {
 }
 
 /// [`SupersetOf`] (⊇) will check if Self contains Rhs. This is the opposite of [`SubsetOf`], so A ⊇ B if and only if B ⊆ A.
-pub trait SupersetOf<Rhs> {
+pub trait SupersetOf<Rhs = Self> {
     fn superset_of(&self, rhs: &Rhs) -> bool;
 }
 
@@ -58,7 +58,7 @@ impl<T, Rhs: SubsetOf<T>> SupersetOf<Rhs> for T {
 }
 
 /// [`StrictSupersetOf`] (⊃) will check if Self contains Rhs, but they cannot be equal. This is the opposite of [`StrictSubsetOf`], so A ⊃ B if and only if B ⊂ A.
-pub trait StrictSupersetOf<Rhs> {
+pub trait StrictSupersetOf<Rhs = Self> {
     fn strict_superset_of(&self, rhs: &Rhs) -> bool;
 }
 
