@@ -78,4 +78,32 @@ pub mod identity {
     {
         super::Union::union(a.clone().difference(b.clone()), b.difference(a))
     }
+
+    /// A - B = A - (A ∩ B)
+    pub fn difference_using_intersection<A, B>(
+        a: A,
+        b: B,
+    ) -> <A as super::Difference<<A as super::Intersection<B>>::Output>>::Output
+    where
+        A: Clone
+            + super::Intersection<B>
+            + super::Difference<<A as super::Intersection<B>>::Output>,
+    {
+        a.clone().difference(a.intersection(b))
+    }
+
+    /// A ⊖ B = (A ∪ B) - (A ∩ B)
+    pub fn disjunctive_union_using_union_intersection_and_difference<A, B>(
+        a: A,
+        b: B,
+    ) -> <<A as super::Union<B>>::Output as super::Difference<
+        <A as super::Intersection<B>>::Output,
+    >>::Output
+    where
+        A: Clone + super::Union<B> + super::Intersection<B>,
+        B: Clone,
+        <A as super::Union<B>>::Output: super::Difference<<A as super::Intersection<B>>::Output>,
+    {
+        super::Difference::difference(a.clone().union(b.clone()), a.intersection(b))
+    }
 }
