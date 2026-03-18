@@ -1,9 +1,9 @@
 [package]
-name = "friperms_derive"
-version = "0.1.1"
+name = "finit-derive"
+version = "0.1.0"
 edition = "2024"
-description = "FriPerms is a framework for creating typed permission models for whatever system you could phatom."
-repository = "https://github.com/DreamplaySE/friperms"
+description = "Finit is a library for defining sets of data, and then performing set operations on them. It is designed to be used for permission systems, but can be used for any kind of data that can be represented as a set."
+repository = "https://github.com/DreamplaySE/finit"
 license = "MIT OR Apache-2.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

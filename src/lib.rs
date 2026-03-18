@@ -1,7 +1,29 @@
 #![cfg_attr(not(feature = "std"), no_std)]
-//! A library for working with sets and their relationships, such as subsets, supersets, unions, intersections, etc. It provides traits for defining sets and their operations, as well as comparisons between sets.
+//! A library for working with sets, their relationships and operations.
 //!
-//! This library was originally designed to create a permission system, but it can be used for any kind of set operations and comparisons.
+//! The main traits are:
+//! - [`Set`] - the most basic trait that all sets must implement to be able to use operations and comparisons, since most require them.
+//!
+//! ## [Operations](operations)
+//! - [`operations::Union`] (∪)
+//! - [`operations::UnionAssign`]
+//! - [`operations::Intersection`] (∩)
+//! - [`operations::IntersectionAssign`]
+//! - [`operations::Difference`] (-)
+//! - [`operations::DifferenceAssign`]
+//! - [`operations::DisjunctiveUnion`] (⊖)
+//! - [`operations::DisjunctiveUnionAssign`]
+//!
+//!
+//! ## [Comparisons](comparisons)
+//! - [`comparisons::SetEq`] (≡)
+//! - [`comparisons::SubsetOf`] (⊆)
+//! - [`comparisons::StrictSubsetOf`] (⊂)
+//! - [`comparisons::SupersetOf`] (⊇)
+//! - [`comparisons::StrictSupersetOf`] (⊃)
+//!
+//!
+//! This library was originally designed to create a permission system, but it can be used for any kind of system that requires set-based data structures.
 
 #[cfg(test)]
 #[doc = include_str!("../README.md")]
@@ -16,7 +38,7 @@ pub trait Set {
 }
 
 #[cfg(feature = "derive")]
-pub use friperms_derive::Set;
+pub use finit_derive::Set;
 
 #[macro_use]
 pub mod operations;
@@ -26,9 +48,4 @@ pub mod comparisons;
 
 mod impls;
 
-mod wildcards;
-
-pub mod collections {
-    #[cfg(feature = "std")]
-    pub use super::wildcards::{WildcardBTreeMap, WildcardHashMap};
-}
+pub mod collections;
