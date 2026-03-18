@@ -69,19 +69,55 @@ impl<T, Rhs: StrictSubsetOf<T>> StrictSupersetOf<Rhs> for T {
 }
 
 pub mod identity {
+    use crate::Set;
+
     use super::*;
 
-    /// Formula: A ⊆ B if A ∩ B = A
+    /// A ⊆ B if A ∩ B = A
     pub fn subset_using_intersection_eq<T, Rhs>(a: &T, b: &Rhs) -> bool
     where
         T: Clone + SetEq,
         for<'a> T: IntersectionAssign<&'a Rhs>,
     {
-        // Formula: A ⊆ B if A ∩ B = A
         let mut intersection = a.clone();
 
         intersection.intersection_assign(b);
 
         intersection.set_eq(a)
+    }
+
+    /// A ⊆ B if A ∪ B = B
+    pub fn subset_using_union_eq<T, Rhs>(a: &T, b: &Rhs) -> bool
+    where
+        Rhs: Clone + SetEq,
+        for<'a> Rhs: UnionAssign<&'a T>,
+    {
+        let mut union_set = b.clone();
+
+        union_set.union_assign(a);
+
+        union_set.set_eq(b)
+    }
+
+    /// A ⊆ B if A \ B = ∅
+    pub fn subset_using_difference_empty<T, Rhs>(a: &T, b: &Rhs) -> bool
+    where
+        T: Clone + Set,
+        for<'a> T: DifferenceAssign<&'a Rhs>,
+    {
+        let mut difference = a.clone();
+
+        difference.difference_assign(b);
+
+        difference.is_empty()
+    }
+
+    /// A = B if A ⊆ B and B ⊆ A
+    pub fn eq_using_subset<T, Rhs>(a: &T, b: &Rhs) -> bool
+    where
+        T: SubsetOf<Rhs>,
+        Rhs: SubsetOf<T>,
+    {
+        a.subset_of(b) && b.subset_of(a)
     }
 }
