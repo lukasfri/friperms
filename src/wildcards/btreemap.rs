@@ -1,4 +1,9 @@
-use crate::operations::{Difference, DifferenceAssign, IntersectionAssign, Union, UnionAssign};
+use crate::operations::identity::{
+    disjunctive_union_using_difference_and_union, intersection_using_double_difference,
+};
+use crate::operations::{
+    Difference, DifferenceAssign, DisjunctiveUnionAssign, IntersectionAssign, Union, UnionAssign,
+};
 use crate::{Complement, Set, UniversalSet};
 use std::{collections::BTreeMap, ops::Deref};
 
@@ -140,6 +145,18 @@ where
     }
 }
 
+impl<Key: Ord + Eq + Clone, Value: Set<Empty = Value>, OtherValue: Clone>
+    Union<BTreeMap<Key, OtherValue>> for WildcardBTreeMap<Key, Value>
+where
+    for<'a> Self: Union<&'a BTreeMap<Key, OtherValue>, Output = Self>,
+{
+    type Output = Self;
+
+    fn union(self, rhs: BTreeMap<Key, OtherValue>) -> Self::Output {
+        self.union(&rhs)
+    }
+}
+
 impl<Key: Ord + Eq + Clone, Value: Set<Empty = Value>, OtherValue: Set<Empty = OtherValue>>
     DifferenceAssign<&BTreeMap<Key, OtherValue>> for WildcardBTreeMap<Key, Value>
 where
@@ -272,6 +289,21 @@ where
     }
 }
 
+impl<Key, Value, OtherValue> Union<WildcardBTreeMap<Key, OtherValue>>
+    for WildcardBTreeMap<Key, Value>
+where
+    Key: Ord + Eq + Clone,
+    Value: Set<Empty = Value> + Clone,
+    OtherValue: Set<Empty = OtherValue> + Clone,
+    for<'a> Self: Union<&'a WildcardBTreeMap<Key, OtherValue>, Output = Self>,
+{
+    type Output = Self;
+
+    fn union(self, rhs: WildcardBTreeMap<Key, OtherValue>) -> Self::Output {
+        self.union(&rhs)
+    }
+}
+
 impl<Key, Value, OtherValue> DifferenceAssign<&WildcardBTreeMap<Key, OtherValue>>
     for WildcardBTreeMap<Key, Value>
 where
@@ -338,19 +370,84 @@ impl<Key, Value, OtherValue> Difference<&WildcardBTreeMap<Key, OtherValue>>
 where
     Key: Ord + Eq + Clone,
     Value: Set<Empty = Value> + Clone,
-    for<'a> Value: DifferenceAssign<&'a Value>
-        + DifferenceAssign<&'a OtherValue>
-        + IntersectionAssign<&'a OtherValue>
-        + UnionAssign<&'a OtherValue>
-        + UnionAssign<&'a Value>,
     OtherValue: Set<Empty = OtherValue> + Clone,
-    for<'a> OtherValue: IntersectionAssign<&'a Value>,
+    for<'a> Self: DifferenceAssign<&'a WildcardBTreeMap<Key, OtherValue>>,
 {
     type Output = Self;
 
     fn difference(mut self, rhs: &WildcardBTreeMap<Key, OtherValue>) -> Self::Output {
         self.difference_assign(rhs);
         self
+    }
+}
+
+impl<Key, Value, OtherValue> Difference<WildcardBTreeMap<Key, OtherValue>>
+    for WildcardBTreeMap<Key, Value>
+where
+    Key: Ord + Eq + Clone,
+    Value: Set<Empty = Value> + Clone,
+    OtherValue: Set<Empty = OtherValue> + Clone,
+    for<'a> Self: Difference<&'a WildcardBTreeMap<Key, OtherValue>, Output = Self>,
+{
+    type Output = Self;
+
+    fn difference(self, rhs: WildcardBTreeMap<Key, OtherValue>) -> Self::Output {
+        self.difference(&rhs)
+    }
+}
+
+impl<Key, Value, OtherValue> IntersectionAssign<&WildcardBTreeMap<Key, OtherValue>>
+    for WildcardBTreeMap<Key, Value>
+where
+    Key: Ord + Eq + Clone,
+    Value: Set<Empty = Value> + Clone,
+    OtherValue: Set<Empty = OtherValue> + Clone,
+    for<'a> Self: Difference<&'a WildcardBTreeMap<Key, OtherValue>, Output = Self>,
+    Self: Difference<Self, Output = Self>,
+{
+    fn intersection_assign(&mut self, rhs: &WildcardBTreeMap<Key, OtherValue>) {
+        *self = intersection_using_double_difference(self.clone(), rhs);
+    }
+}
+
+impl<Key, Value, OtherValue> IntersectionAssign<WildcardBTreeMap<Key, OtherValue>>
+    for WildcardBTreeMap<Key, Value>
+where
+    Key: Ord + Eq + Clone,
+    Value: Set<Empty = Value> + Clone,
+    OtherValue: Set<Empty = OtherValue> + Clone,
+    for<'a> Self: IntersectionAssign<&'a WildcardBTreeMap<Key, OtherValue>>,
+{
+    fn intersection_assign(&mut self, rhs: WildcardBTreeMap<Key, OtherValue>) {
+        self.intersection_assign(&rhs);
+    }
+}
+
+impl<Key, Value, OtherValue> DisjunctiveUnionAssign<&WildcardBTreeMap<Key, OtherValue>>
+    for WildcardBTreeMap<Key, Value>
+where
+    Key: Ord + Eq + Clone,
+    Value: Set<Empty = Value> + Clone,
+    OtherValue: Set<Empty = OtherValue> + Clone,
+    Self: DisjunctiveUnionAssign<WildcardBTreeMap<Key, OtherValue>>,
+    WildcardBTreeMap<Key, OtherValue>: Clone,
+{
+    fn disjunctive_union_assign(&mut self, rhs: &WildcardBTreeMap<Key, OtherValue>) {
+        self.disjunctive_union_assign(rhs.clone());
+    }
+}
+
+impl<Key, Value, OtherValue> DisjunctiveUnionAssign<WildcardBTreeMap<Key, OtherValue>>
+    for WildcardBTreeMap<Key, Value>
+where
+    Key: Ord + Eq + Clone,
+    Value: Set<Empty = Value> + Clone,
+    OtherValue: Set<Empty = OtherValue> + Clone,
+    Self: Difference<WildcardBTreeMap<Key, OtherValue>, Output = Self> + Union<Self, Output = Self>,
+    WildcardBTreeMap<Key, OtherValue>: Difference<Self, Output = Self>,
+{
+    fn disjunctive_union_assign(&mut self, rhs: WildcardBTreeMap<Key, OtherValue>) {
+        *self = disjunctive_union_using_difference_and_union(self.clone(), rhs);
     }
 }
 
@@ -701,5 +798,114 @@ mod tests {
         tree_1_minus_2.union_assign(&tree_2);
         //Does not equal tree_1 because 1.5.5 has been added.
         assert_ne!(tree_1, tree_1_minus_2);
+    }
+
+    #[rstest]
+    #[case(WildcardBTreeMap::<i32, bool> {
+        wildcard_value: Box::new(true),
+        wildcard_exceptions: btreemap! {},
+        rest_list: btreemap! {},
+    }, WildcardBTreeMap {
+        wildcard_value: Box::new(true),
+        wildcard_exceptions: btreemap! {},
+        rest_list: btreemap! {},
+    }, WildcardBTreeMap {
+        wildcard_value: Box::new(true),
+        wildcard_exceptions: btreemap! {},
+        rest_list: btreemap! {}
+    })]
+    #[case(WildcardBTreeMap {
+        wildcard_value: Box::new(true),
+        wildcard_exceptions: btreemap! {
+            1 => true,
+        },
+        rest_list: btreemap! {},
+    }, WildcardBTreeMap {
+        wildcard_value: Box::new(true),
+        wildcard_exceptions: btreemap! {},
+        rest_list: btreemap! {},
+    }, WildcardBTreeMap {
+        wildcard_value: Box::new(true),
+        wildcard_exceptions: btreemap! {
+            1 => true,
+        },
+        rest_list: btreemap! {}
+    })]
+    #[case(WildcardBTreeMap {
+        wildcard_value: Box::new(true),
+        wildcard_exceptions: btreemap! {},
+        rest_list: btreemap! {
+            1 => true,
+        },
+    }, WildcardBTreeMap {
+        wildcard_value: Box::new(false),
+        wildcard_exceptions: btreemap! {},
+        rest_list: btreemap! {
+            1 => true,
+        },
+    }, WildcardBTreeMap {
+        wildcard_value: Box::new(false),
+        wildcard_exceptions: btreemap! {},
+        rest_list: btreemap! {
+            1 => true,
+        }
+    })]
+    fn intersection_list_tests<I1, I2, R>(
+        #[case] mut list1: I1,
+        #[case] list2: I2,
+        #[case] result: R,
+    ) where
+        I1: PartialEq<R> + Debug,
+        I2: Debug,
+        R: Debug,
+        for<'a> I1: IntersectionAssign<&'a I2>,
+    {
+        list1.intersection_assign(&list2);
+        assert_eq!(list1, result);
+    }
+
+    #[rstest]
+    #[case(WildcardBTreeMap::<i32, bool> {
+        wildcard_value: Box::new(true),
+        wildcard_exceptions: btreemap! {},
+        rest_list: btreemap! {},
+    }, WildcardBTreeMap {
+        wildcard_value: Box::new(true),
+        wildcard_exceptions: btreemap! {},
+        rest_list: btreemap! {},
+    }, WildcardBTreeMap {
+        wildcard_value: Box::new(false),
+        wildcard_exceptions: btreemap! {},
+        rest_list: btreemap! {}
+    })]
+    #[case(WildcardBTreeMap {
+        wildcard_value: Box::new(true),
+        wildcard_exceptions: btreemap! {
+            1 => true,
+        },
+        rest_list: btreemap! {},
+    }, WildcardBTreeMap {
+        wildcard_value: Box::new(false),
+        wildcard_exceptions: btreemap! {},
+        rest_list: btreemap! {
+            1 => true,
+        },
+    }, WildcardBTreeMap {
+        wildcard_value: Box::new(true),
+        wildcard_exceptions: btreemap! {},
+        rest_list: btreemap! {}
+    })]
+    fn disjunctive_union_list_tests<I1, I2, R>(
+        #[case] mut list1: I1,
+        #[case] list2: I2,
+        #[case] result: R,
+    ) where
+        I1: PartialEq<R> + Debug,
+        I2: Debug,
+        R: Debug,
+        I1: DisjunctiveUnionAssign<I2>,
+    {
+        list1.disjunctive_union_assign(list2);
+        assert_eq!(list1, result);
     }
 }

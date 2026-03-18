@@ -31,12 +31,7 @@ where
     for<'a> T: IntersectionAssign<&'a Rhs>,
 {
     fn subset_of(&self, rhs: &Rhs) -> bool {
-        // Formula: A ⊆ B if A ∩ B = A
-        let mut intersection = self.clone();
-
-        intersection.intersection_assign(rhs);
-
-        intersection.set_eq(self)
+        identity::subset_using_intersection_eq(self, rhs)
     }
 }
 
@@ -70,5 +65,23 @@ pub trait StrictSupersetOf<Rhs> {
 impl<T, Rhs: StrictSubsetOf<T>> StrictSupersetOf<Rhs> for T {
     fn strict_superset_of(&self, rhs: &Rhs) -> bool {
         rhs.strict_subset_of(self)
+    }
+}
+
+pub mod identity {
+    use super::*;
+
+    /// Formula: A ⊆ B if A ∩ B = A
+    pub fn subset_using_intersection_eq<T, Rhs>(a: &T, b: &Rhs) -> bool
+    where
+        T: Clone + SetEq,
+        for<'a> T: IntersectionAssign<&'a Rhs>,
+    {
+        // Formula: A ⊆ B if A ∩ B = A
+        let mut intersection = a.clone();
+
+        intersection.intersection_assign(b);
+
+        intersection.set_eq(a)
     }
 }

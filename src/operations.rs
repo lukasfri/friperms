@@ -54,3 +54,29 @@ pub trait DisjunctiveUnion<Rhs>: Set {
 pub trait DisjunctiveUnionAssign<Rhs>: Set {
     fn disjunctive_union_assign(&mut self, rhs: Rhs);
 }
+
+pub mod identity {
+    /// A ∩ B = A - (A - B)
+    pub fn intersection_using_double_difference<A, B>(
+        a: A,
+        b: B,
+    ) -> <A as super::Difference<<A as super::Difference<B>>::Output>>::Output
+    where
+        A: Clone + super::Difference<B> + super::Difference<<A as super::Difference<B>>::Output>,
+    {
+        a.clone().difference(a.difference(b))
+    }
+
+    /// A Δ B = (A − B) ∪ (B − A)
+    pub fn disjunctive_union_using_difference_and_union<A, B>(
+        a: A,
+        b: B,
+    ) -> <<A as super::Difference<B>>::Output as super::Union<<B as super::Difference<A>>::Output>>::Output
+    where
+        A: Clone + super::Difference<B>,
+        B: Clone + super::Difference<A>,
+        <A as super::Difference<B>>::Output: super::Union<<B as super::Difference<A>>::Output>,
+    {
+        super::Union::union(a.clone().difference(b.clone()), b.difference(a))
+    }
+}
