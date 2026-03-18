@@ -1,13 +1,15 @@
 extern crate proc_macro;
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{Data, DeriveInput};
+use syn::{Data, DeriveInput, parse_quote};
 
 #[proc_macro_derive(Set)]
 pub fn set_derive_method(input: TokenStream) -> TokenStream {
     let input = proc_macro2::TokenStream::from(input);
 
     let input: DeriveInput = syn::parse2(input).unwrap();
+
+    let crate_name: syn::Path = parse_quote!(::finit);
     let struct_name = &input.ident;
 
     let Data::Struct(struct_data) = &input.data else {
@@ -21,7 +23,7 @@ pub fn set_derive_method(input: TokenStream) -> TokenStream {
             .map(|field| {
                 let field_name = field.ident.as_ref().expect("Struct is named.");
                 quote! {
-                    ::friperms::Set::is_empty(&self.#field_name)
+                    #crate_name::Set::is_empty(&self.#field_name)
                 }
             })
             .collect(),
@@ -31,7 +33,7 @@ pub fn set_derive_method(input: TokenStream) -> TokenStream {
             .enumerate()
             .map(|(i, _field)| {
                 quote! {
-                    ::friperms::Set::is_empty(&self.#i)
+                    #crate_name::Set::is_empty(&self.#i)
                 }
             })
             .collect(),
@@ -51,7 +53,7 @@ pub fn set_derive_method(input: TokenStream) -> TokenStream {
                 let field_name = field.ident.as_ref().expect("Struct is named.");
                 let field_type = &field.ty;
                 quote! {
-                    #field_name: <#field_type as ::friperms::Set>::empty(),
+                    #field_name: <#field_type as #crate_name::Set>::empty(),
                 }
             })
             .collect(),
@@ -61,7 +63,7 @@ pub fn set_derive_method(input: TokenStream) -> TokenStream {
             .enumerate()
             .map(|(i, _field)| {
                 quote! {
-                    ::friperms::Set::is_empty(&self.#i)
+                    #crate_name::Set::is_empty(&self.#i)
                 }
             })
             .collect(),
@@ -74,7 +76,7 @@ pub fn set_derive_method(input: TokenStream) -> TokenStream {
         .expect("No unit structs means there must be atleast 1 field.");
 
     quote! {
-        impl ::friperms::Set for #struct_name {
+        impl #crate_name::Set for #struct_name {
             type Empty = Self;
 
             fn is_empty(&self) -> bool {
@@ -96,6 +98,8 @@ pub fn union_in_place_derive_method(input: TokenStream) -> TokenStream {
     let input = proc_macro2::TokenStream::from(input);
 
     let input: DeriveInput = syn::parse2(input).unwrap();
+
+    let crate_name: syn::Path = parse_quote!(::finit);
     let struct_name = &input.ident;
 
     let Data::Struct(struct_data) = &input.data else {
@@ -109,7 +113,7 @@ pub fn union_in_place_derive_method(input: TokenStream) -> TokenStream {
             .map(|field| {
                 let field_name = field.ident.as_ref().expect("Struct is named.");
                 quote! {
-                    ::friperms::operations::UnionAssign::union_assign(&mut self.#field_name, &rhs.#field_name);
+                    #crate_name::operations::UnionAssign::union_assign(&mut self.#field_name, &rhs.#field_name);
                 }
             })
             .collect(),
@@ -119,7 +123,7 @@ pub fn union_in_place_derive_method(input: TokenStream) -> TokenStream {
             .enumerate()
             .map(|(i, _field)| {
                 quote! {
-                    ::friperms::operations::UnionAssign::union_assign(&mut self.#i, &rhs.#i);
+                    #crate_name::operations::UnionAssign::union_assign(&mut self.#i, &rhs.#i);
                 }
             })
             .collect(),
@@ -132,7 +136,7 @@ pub fn union_in_place_derive_method(input: TokenStream) -> TokenStream {
         .expect("No unit structs means there must be atleast 1 field.");
 
     quote! {
-        impl ::friperms::operations::UnionAssign<&#struct_name> for #struct_name {
+        impl #crate_name::operations::UnionAssign<&#struct_name> for #struct_name {
             fn union_assign(&mut self, rhs: &#struct_name) {
                 #function_body
             }
@@ -146,6 +150,8 @@ pub fn difference_in_place_derive_method(input: TokenStream) -> TokenStream {
     let input = proc_macro2::TokenStream::from(input);
 
     let input: DeriveInput = syn::parse2(input).unwrap();
+
+    let crate_name: syn::Path = parse_quote!(::finit);
     let struct_name = &input.ident;
 
     let Data::Struct(struct_data) = &input.data else {
@@ -159,7 +165,7 @@ pub fn difference_in_place_derive_method(input: TokenStream) -> TokenStream {
             .map(|field| {
                 let field_name = field.ident.as_ref().expect("Struct is named.");
                 quote! {
-                    ::friperms::operations::DifferenceAssign::difference_assign(&mut self.#field_name, &rhs.#field_name);
+                    #crate_name::operations::DifferenceAssign::difference_assign(&mut self.#field_name, &rhs.#field_name);
                 }
             })
             .collect(),
@@ -169,7 +175,7 @@ pub fn difference_in_place_derive_method(input: TokenStream) -> TokenStream {
             .enumerate()
             .map(|(i, _field)| {
                 quote! {
-                    ::friperms::operations::DifferenceAssign::difference_assign(&mut self.#i, &rhs.#i);
+                    #crate_name::operations::DifferenceAssign::difference_assign(&mut self.#i, &rhs.#i);
                 }
             })
             .collect(),
@@ -182,7 +188,7 @@ pub fn difference_in_place_derive_method(input: TokenStream) -> TokenStream {
         .expect("No unit structs means there must be atleast 1 field.");
 
     quote! {
-        impl ::friperms::operations::DifferenceAssign<&#struct_name> for #struct_name {
+        impl #crate_name::operations::DifferenceAssign<&#struct_name> for #struct_name {
             fn difference_assign(&mut self, rhs: &#struct_name) {
                 #function_body
             }
@@ -196,6 +202,8 @@ pub fn intersection_in_place_derive_method(input: TokenStream) -> TokenStream {
     let input = proc_macro2::TokenStream::from(input);
 
     let input: DeriveInput = syn::parse2(input).unwrap();
+
+    let crate_name: syn::Path = parse_quote!(::finit);
     let struct_name = &input.ident;
 
     let Data::Struct(struct_data) = &input.data else {
@@ -209,7 +217,7 @@ pub fn intersection_in_place_derive_method(input: TokenStream) -> TokenStream {
             .map(|field| {
                 let field_name = field.ident.as_ref().expect("Struct is named.");
                 quote! {
-                    ::friperms::operations::IntersectionAssign::intersection_assign(&mut self.#field_name, &rhs.#field_name);
+                    #crate_name::operations::IntersectionAssign::intersection_assign(&mut self.#field_name, &rhs.#field_name);
                 }
             })
             .collect(),
@@ -219,7 +227,7 @@ pub fn intersection_in_place_derive_method(input: TokenStream) -> TokenStream {
             .enumerate()
             .map(|(i, _field)| {
                 quote! {
-                    ::friperms::operations::IntersectionAssign::intersection_assign(&mut self.#i, &rhs.#i);
+                    #crate_name::operations::IntersectionAssign::intersection_assign(&mut self.#i, &rhs.#i);
                 }
             })
             .collect(),
@@ -232,7 +240,7 @@ pub fn intersection_in_place_derive_method(input: TokenStream) -> TokenStream {
         .expect("No unit structs means there must be atleast 1 field.");
 
     quote! {
-        impl ::friperms::operations::IntersectionAssign<&#struct_name> for #struct_name {
+        impl #crate_name::operations::IntersectionAssign<&#struct_name> for #struct_name {
             fn intersection_assign(&mut self, rhs: &#struct_name) {
                 #function_body
             }
@@ -246,6 +254,8 @@ pub fn disjunctive_union_in_place_derive_method(input: TokenStream) -> TokenStre
     let input = proc_macro2::TokenStream::from(input);
 
     let input: DeriveInput = syn::parse2(input).unwrap();
+
+    let crate_name: syn::Path = parse_quote!(::finit);
     let struct_name = &input.ident;
 
     let Data::Struct(struct_data) = &input.data else {
@@ -259,7 +269,7 @@ pub fn disjunctive_union_in_place_derive_method(input: TokenStream) -> TokenStre
             .map(|field| {
                 let field_name = field.ident.as_ref().expect("Struct is named.");
                 quote! {
-                    ::friperms::operations::DisjunctiveUnionAssign::disjunctive_union_assign(&mut self.#field_name, &rhs.#field_name);
+                    #crate_name::operations::DisjunctiveUnionAssign::disjunctive_union_assign(&mut self.#field_name, &rhs.#field_name);
                 }
             })
             .collect(),
@@ -269,7 +279,7 @@ pub fn disjunctive_union_in_place_derive_method(input: TokenStream) -> TokenStre
             .enumerate()
             .map(|(i, _field)| {
                 quote! {
-                    ::friperms::operations::DisjunctiveUnionAssign::disjunctive_union_assign(&mut self.#i, &rhs.#i);
+                    #crate_name::operations::DisjunctiveUnionAssign::disjunctive_union_assign(&mut self.#i, &rhs.#i);
                 }
             })
             .collect(),
@@ -282,7 +292,7 @@ pub fn disjunctive_union_in_place_derive_method(input: TokenStream) -> TokenStre
         .expect("No unit structs means there must be atleast 1 field.");
 
     quote! {
-        impl ::friperms::operations::DisjunctiveUnionAssign<&#struct_name> for #struct_name {
+        impl #crate_name::operations::DisjunctiveUnionAssign<&#struct_name> for #struct_name {
             fn disjunctive_union_assign(&mut self, rhs: &#struct_name) {
                 #function_body
             }

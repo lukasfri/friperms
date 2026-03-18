@@ -1,5 +1,4 @@
 //! This module contains traits for comparing sets, such as checking if two sets are equal, if one set is a subset of another, etc.
-
 use crate::operations::*;
 
 /// [`SetEq`] (≡) will check if Self and Rhs are equal as sets, ignoring any non-set properties.
@@ -8,6 +7,7 @@ pub trait SetEq<Rhs = Self> {
     fn set_eq(&self, rhs: &Rhs) -> bool;
 }
 
+/// A helper macro to implement [`SetEq`] for types that also implement [`PartialEq`], since in many cases they will be the same.
 #[macro_export]
 macro_rules! set_eq_partial_eq_impl {
     ($($t:ty),*) => {
@@ -68,6 +68,7 @@ impl<T, Rhs: StrictSubsetOf<T>> StrictSupersetOf<Rhs> for T {
     }
 }
 
+/// The [`identity`] submodule contains identities that can be used to implement some comparisons in terms of others.
 pub mod identity {
     use crate::Set;
 

@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 
-use friperms::comparisons::SubsetOf;
-use friperms::operations::{
+use finit::comparisons::SubsetOf;
+use finit::operations::{
     DifferenceAssign, DisjunctiveUnionAssign, IntersectionAssign, UnionAssign,
 };
-use friperms::{Set, set_eq_partial_eq_impl};
+use finit::{Set, set_eq_partial_eq_impl};
 use maplit::hashmap;
 
 #[derive(
@@ -74,7 +74,7 @@ impl UserPerms {
 }
 
 fn main() {
-    use friperms::Set;
+    use finit::Set;
 
     let user_perms = UserPerms {
         account_access: true,

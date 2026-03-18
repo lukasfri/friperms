@@ -5,28 +5,32 @@ use crate::operations::identity::{
 use crate::operations::{
     Difference, DifferenceAssign, DisjunctiveUnionAssign, IntersectionAssign, Union, UnionAssign,
 };
-use std::{collections::BTreeMap, ops::Deref};
+use std::{collections::HashMap, hash::Hash, ops::Deref};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-/// Set-variation of a key-value list with optional wildcard. Does operations on sub-values based on key.
-pub struct WildcardBTreeMap<Key: Ord + Eq + Clone, Value: Set> {
-    wildcard_exceptions: BTreeMap<Key, Value>,
+/// An extension of [`HashMap`] with easy representation of undefined key values.
+///
+/// This is a generalization of a [`HashMap`] which cannot represent the universal set of its domain in an easy way without having to define a specific value for every value possible of its key type.
+///
+/// For a similar structure that uses a [`std::collections::BTreeMap`] instead of a [`HashMap`], see [`super::WildcardBTreeMap`].
+pub struct WildcardHashMap<Key: Hash + Eq + Clone, Value: Set> {
+    wildcard_exceptions: HashMap<Key, Value>,
     wildcard_value: Box<Value>,
-    rest_list: BTreeMap<Key, Value>,
+    rest_list: HashMap<Key, Value>,
 }
 
-impl<Key: Ord + Eq + Clone, Value: Set> WildcardBTreeMap<Key, Value> {
+impl<Key: Hash + Eq + Clone, Value: Set> WildcardHashMap<Key, Value> {
     pub fn new(wildcard_value: Value) -> Self {
         Self {
-            wildcard_exceptions: BTreeMap::empty(),
+            wildcard_exceptions: HashMap::empty(),
             wildcard_value: Box::new(wildcard_value),
-            rest_list: BTreeMap::empty(),
+            rest_list: HashMap::empty(),
         }
     }
 }
 
-impl<Key: Ord + Eq + Clone, Value: Set<Empty = Value>> Set for WildcardBTreeMap<Key, Value> {
+impl<Key: Hash + Eq + Clone, Value: Set<Empty = Value>> Set for WildcardHashMap<Key, Value> {
     type Empty = Self;
 
     fn is_empty(&self) -> bool {
@@ -34,25 +38,25 @@ impl<Key: Ord + Eq + Clone, Value: Set<Empty = Value>> Set for WildcardBTreeMap<
     }
 
     fn empty() -> Self::Empty {
-        WildcardBTreeMap {
-            wildcard_exceptions: BTreeMap::empty(),
+        WildcardHashMap {
+            wildcard_exceptions: HashMap::empty(),
             wildcard_value: Box::new(Value::empty()),
-            rest_list: BTreeMap::empty(),
+            rest_list: HashMap::empty(),
         }
     }
 }
 
-impl<Key: Ord + Eq + Clone, Value: Set<Empty = Value>> Default for WildcardBTreeMap<Key, Value> {
+impl<Key: Hash + Eq + Clone, Value: Set<Empty = Value>> Default for WildcardHashMap<Key, Value> {
     fn default() -> Self {
         Self::empty()
     }
 }
 
-impl<Key: Ord + Eq + Clone, Value: Set<Empty = Value>> From<BTreeMap<Key, Value>>
-    for WildcardBTreeMap<Key, Value>
+impl<Key: Hash + Eq + Clone, Value: Set<Empty = Value>> From<HashMap<Key, Value>>
+    for WildcardHashMap<Key, Value>
 {
-    fn from(rest_list: BTreeMap<Key, Value>) -> Self {
-        WildcardBTreeMap {
+    fn from(rest_list: HashMap<Key, Value>) -> Self {
+        WildcardHashMap {
             rest_list,
             ..Default::default()
         }
@@ -60,15 +64,15 @@ impl<Key: Ord + Eq + Clone, Value: Set<Empty = Value>> From<BTreeMap<Key, Value>
 }
 
 // WildcardList A <-> List B
-impl<Key: Ord + Eq + Clone, Value: Set<Empty = Value>, OtherValue: Clone>
-    UnionAssign<&BTreeMap<Key, OtherValue>> for WildcardBTreeMap<Key, Value>
+impl<Key: Hash + Eq + Clone, Value: Set<Empty = Value>, OtherValue: Clone>
+    UnionAssign<&HashMap<Key, OtherValue>> for WildcardHashMap<Key, Value>
 where
     for<'a> Value: DifferenceAssign<&'a Value>
         + IntersectionAssign<&'a OtherValue>
         + UnionAssign<&'a OtherValue>,
     for<'a> OtherValue: DifferenceAssign<&'a Value>,
 {
-    fn union_assign(&mut self, rhs: &BTreeMap<Key, OtherValue>) {
+    fn union_assign(&mut self, rhs: &HashMap<Key, OtherValue>) {
         for (key, value) in rhs.iter() {
             //For each key, for the intersection that is covered by the wildcard and value, remove it from the exceptions for this key.
             //For the rest (that is not part of the intersection), add it to the rest list.
@@ -101,8 +105,8 @@ where
     }
 }
 
-impl<Key: Ord + Eq + Clone, Value: Set<Empty = Value>, OtherValue: Clone>
-    Union<&BTreeMap<Key, OtherValue>> for WildcardBTreeMap<Key, Value>
+impl<Key: Hash + Eq + Clone, Value: Set<Empty = Value>, OtherValue: Clone>
+    Union<&HashMap<Key, OtherValue>> for WildcardHashMap<Key, Value>
 where
     for<'a> Value: DifferenceAssign<&'a Value>
         + IntersectionAssign<&'a OtherValue>
@@ -111,32 +115,32 @@ where
 {
     type Output = Self;
 
-    fn union(mut self, rhs: &BTreeMap<Key, OtherValue>) -> Self::Output {
+    fn union(mut self, rhs: &HashMap<Key, OtherValue>) -> Self::Output {
         self.union_assign(rhs);
         self
     }
 }
 
-impl<Key: Ord + Eq + Clone, Value: Set<Empty = Value>, OtherValue: Clone>
-    Union<BTreeMap<Key, OtherValue>> for WildcardBTreeMap<Key, Value>
+impl<Key: Hash + Eq + Clone, Value: Set<Empty = Value>, OtherValue: Clone>
+    Union<HashMap<Key, OtherValue>> for WildcardHashMap<Key, Value>
 where
-    for<'a> Self: Union<&'a BTreeMap<Key, OtherValue>, Output = Self>,
+    for<'a> Self: Union<&'a HashMap<Key, OtherValue>, Output = Self>,
 {
     type Output = Self;
 
-    fn union(self, rhs: BTreeMap<Key, OtherValue>) -> Self::Output {
+    fn union(self, rhs: HashMap<Key, OtherValue>) -> Self::Output {
         self.union(&rhs)
     }
 }
 
-impl<Key: Ord + Eq + Clone, Value: Set<Empty = Value>, OtherValue: Set<Empty = OtherValue>>
-    DifferenceAssign<&BTreeMap<Key, OtherValue>> for WildcardBTreeMap<Key, Value>
+impl<Key: Hash + Eq + Clone, Value: Set<Empty = Value>, OtherValue: Set<Empty = OtherValue>>
+    DifferenceAssign<&HashMap<Key, OtherValue>> for WildcardHashMap<Key, Value>
 where
     for<'a> Value: DifferenceAssign<&'a OtherValue>
         + IntersectionAssign<&'a OtherValue>
         + UnionAssign<&'a Value>,
 {
-    fn difference_assign(&mut self, rhs: &BTreeMap<Key, OtherValue>) {
+    fn difference_assign(&mut self, rhs: &HashMap<Key, OtherValue>) {
         self.rest_list.difference_assign(rhs);
 
         for (key, value) in rhs.iter() {
@@ -153,8 +157,8 @@ where
     }
 }
 
-impl<Key: Ord + Eq + Clone, Value: Set<Empty = Value>, OtherValue: Set<Empty = OtherValue>>
-    Difference<&BTreeMap<Key, OtherValue>> for WildcardBTreeMap<Key, Value>
+impl<Key: Hash + Eq + Clone, Value: Set<Empty = Value>, OtherValue: Set<Empty = OtherValue>>
+    Difference<&HashMap<Key, OtherValue>> for WildcardHashMap<Key, Value>
 where
     for<'a> Value: DifferenceAssign<&'a OtherValue>
         + IntersectionAssign<&'a OtherValue>
@@ -162,35 +166,35 @@ where
 {
     type Output = Self;
 
-    fn difference(mut self, rhs: &BTreeMap<Key, OtherValue>) -> Self::Output {
+    fn difference(mut self, rhs: &HashMap<Key, OtherValue>) -> Self::Output {
         self.difference_assign(rhs);
         self
     }
 }
 
 // WildcardList A <-> WildcardList B
-impl<Key, Value, OtherValue> UnionAssign<&WildcardBTreeMap<Key, OtherValue>>
-    for WildcardBTreeMap<Key, Value>
+impl<Key, Value, OtherValue> UnionAssign<&WildcardHashMap<Key, OtherValue>>
+    for WildcardHashMap<Key, Value>
 where
-    Key: Ord + Eq + Clone,
+    Key: Hash + Eq + Clone,
     Value: Set<Empty = Value> + Clone,
     for<'a> Value: DifferenceAssign<&'a Value>
         + DifferenceAssign<&'a OtherValue>
         + UnionAssign<&'a OtherValue>,
     OtherValue: Set<Empty = OtherValue> + Clone,
     for<'a> OtherValue: DifferenceAssign<&'a Value> + DifferenceAssign<&'a OtherValue>,
-    for<'a> BTreeMap<Key, Value>: UnionAssign<&'a BTreeMap<Key, OtherValue>>,
+    for<'a> HashMap<Key, Value>: UnionAssign<&'a HashMap<Key, OtherValue>>,
 {
-    fn union_assign(&mut self, rhs: &WildcardBTreeMap<Key, OtherValue>) {
+    fn union_assign(&mut self, rhs: &WildcardHashMap<Key, OtherValue>) {
         let mut cleaned_rhs_wildcard_exceptions = rhs.wildcard_exceptions.clone();
 
         /// This function removes covered exceptions from a wildcard value (and it's associated exceptions).
         fn remove_covered_values<Key, Value, OtherValue>(
-            exceptions: &mut BTreeMap<Key, OtherValue>,
+            exceptions: &mut HashMap<Key, OtherValue>,
             wildcard_value: &Value,
-            wildcard_exceptions: &BTreeMap<Key, Value>,
+            wildcard_exceptions: &HashMap<Key, Value>,
         ) where
-            Key: Ord + Eq + Clone,
+            Key: Hash + Eq + Clone,
             Value: Set<Empty = Value> + Clone,
             for<'a> Value: DifferenceAssign<&'a Value>, // + DifferenceAssign<&'a OtherValue>,
             for<'a> OtherValue: DifferenceAssign<&'a Value>, // + DifferenceAssign<&'a OtherValue>,
@@ -205,7 +209,7 @@ where
                 };
             }
 
-            crate::impls::btreemap::remove_empty_keys(exceptions);
+            crate::impls::hashmap::remove_empty_keys(exceptions);
         }
 
         // Remove exceptions in rhs covered by selfs wildcard.
@@ -241,45 +245,44 @@ where
     }
 }
 
-impl<Key, Value, OtherValue> Union<&WildcardBTreeMap<Key, OtherValue>>
-    for WildcardBTreeMap<Key, Value>
+impl<Key, Value, OtherValue> Union<&WildcardHashMap<Key, OtherValue>>
+    for WildcardHashMap<Key, Value>
 where
-    Key: Ord + Eq + Clone,
+    Key: Hash + Eq + Clone,
     Value: Set<Empty = Value> + Clone,
     for<'a> Value: DifferenceAssign<&'a Value>
         + DifferenceAssign<&'a OtherValue>
         + UnionAssign<&'a OtherValue>,
     OtherValue: Set<Empty = OtherValue> + Clone,
     for<'a> OtherValue: DifferenceAssign<&'a Value> + DifferenceAssign<&'a OtherValue>,
-    for<'a> BTreeMap<Key, Value>: UnionAssign<&'a BTreeMap<Key, OtherValue>>,
+    for<'a> HashMap<Key, Value>: UnionAssign<&'a HashMap<Key, OtherValue>>,
 {
     type Output = Self;
 
-    fn union(mut self, rhs: &WildcardBTreeMap<Key, OtherValue>) -> Self::Output {
+    fn union(mut self, rhs: &WildcardHashMap<Key, OtherValue>) -> Self::Output {
         self.union_assign(rhs);
         self
     }
 }
 
-impl<Key, Value, OtherValue> Union<WildcardBTreeMap<Key, OtherValue>>
-    for WildcardBTreeMap<Key, Value>
+impl<Key, Value, OtherValue> Union<WildcardHashMap<Key, OtherValue>> for WildcardHashMap<Key, Value>
 where
-    Key: Ord + Eq + Clone,
+    Key: Hash + Eq + Clone,
     Value: Set<Empty = Value> + Clone,
     OtherValue: Set<Empty = OtherValue> + Clone,
-    for<'a> Self: Union<&'a WildcardBTreeMap<Key, OtherValue>, Output = Self>,
+    for<'a> Self: Union<&'a WildcardHashMap<Key, OtherValue>, Output = Self>,
 {
     type Output = Self;
 
-    fn union(self, rhs: WildcardBTreeMap<Key, OtherValue>) -> Self::Output {
+    fn union(self, rhs: WildcardHashMap<Key, OtherValue>) -> Self::Output {
         self.union(&rhs)
     }
 }
 
-impl<Key, Value, OtherValue> DifferenceAssign<&WildcardBTreeMap<Key, OtherValue>>
-    for WildcardBTreeMap<Key, Value>
+impl<Key, Value, OtherValue> DifferenceAssign<&WildcardHashMap<Key, OtherValue>>
+    for WildcardHashMap<Key, Value>
 where
-    Key: Ord + Eq + Clone,
+    Key: Hash + Eq + Clone,
     Value: Set<Empty = Value> + Clone,
     for<'a> Value: DifferenceAssign<&'a Value>
         + DifferenceAssign<&'a OtherValue>
@@ -289,7 +292,7 @@ where
     OtherValue: Set<Empty = OtherValue> + Clone,
     for<'a> OtherValue: IntersectionAssign<&'a Value>,
 {
-    fn difference_assign(&mut self, rhs: &WildcardBTreeMap<Key, OtherValue>) {
+    fn difference_assign(&mut self, rhs: &WildcardHashMap<Key, OtherValue>) {
         //If exception exists for X key, that value should not be removed for that key.
         //That means, if there is an intersection between that exception and the wildcard value, it should be added to the rest list.
         for (key, other_exception) in rhs.wildcard_exceptions.iter() {
@@ -337,88 +340,88 @@ where
     }
 }
 
-impl<Key, Value, OtherValue> Difference<&WildcardBTreeMap<Key, OtherValue>>
-    for WildcardBTreeMap<Key, Value>
+impl<Key, Value, OtherValue> Difference<&WildcardHashMap<Key, OtherValue>>
+    for WildcardHashMap<Key, Value>
 where
-    Key: Ord + Eq + Clone,
+    Key: Hash + Eq + Clone,
     Value: Set<Empty = Value> + Clone,
     OtherValue: Set<Empty = OtherValue> + Clone,
-    for<'a> Self: DifferenceAssign<&'a WildcardBTreeMap<Key, OtherValue>>,
+    for<'a> Self: DifferenceAssign<&'a WildcardHashMap<Key, OtherValue>>,
 {
     type Output = Self;
 
-    fn difference(mut self, rhs: &WildcardBTreeMap<Key, OtherValue>) -> Self::Output {
+    fn difference(mut self, rhs: &WildcardHashMap<Key, OtherValue>) -> Self::Output {
         self.difference_assign(rhs);
         self
     }
 }
 
-impl<Key, Value, OtherValue> Difference<WildcardBTreeMap<Key, OtherValue>>
-    for WildcardBTreeMap<Key, Value>
+impl<Key, Value, OtherValue> Difference<WildcardHashMap<Key, OtherValue>>
+    for WildcardHashMap<Key, Value>
 where
-    Key: Ord + Eq + Clone,
+    Key: Hash + Eq + Clone,
     Value: Set<Empty = Value> + Clone,
     OtherValue: Set<Empty = OtherValue> + Clone,
-    for<'a> Self: Difference<&'a WildcardBTreeMap<Key, OtherValue>, Output = Self>,
+    for<'a> Self: Difference<&'a WildcardHashMap<Key, OtherValue>, Output = Self>,
 {
     type Output = Self;
 
-    fn difference(self, rhs: WildcardBTreeMap<Key, OtherValue>) -> Self::Output {
+    fn difference(self, rhs: WildcardHashMap<Key, OtherValue>) -> Self::Output {
         self.difference(&rhs)
     }
 }
 
-impl<Key, Value, OtherValue> IntersectionAssign<&WildcardBTreeMap<Key, OtherValue>>
-    for WildcardBTreeMap<Key, Value>
+impl<Key, Value, OtherValue> IntersectionAssign<&WildcardHashMap<Key, OtherValue>>
+    for WildcardHashMap<Key, Value>
 where
-    Key: Ord + Eq + Clone,
+    Key: Hash + Eq + Clone,
     Value: Set<Empty = Value> + Clone,
     OtherValue: Set<Empty = OtherValue> + Clone,
-    for<'a> Self: Difference<&'a WildcardBTreeMap<Key, OtherValue>, Output = Self>,
+    for<'a> Self: Difference<&'a WildcardHashMap<Key, OtherValue>, Output = Self>,
     Self: Difference<Self, Output = Self>,
 {
-    fn intersection_assign(&mut self, rhs: &WildcardBTreeMap<Key, OtherValue>) {
+    fn intersection_assign(&mut self, rhs: &WildcardHashMap<Key, OtherValue>) {
         *self = intersection_using_double_difference(self.clone(), rhs);
     }
 }
 
-impl<Key, Value, OtherValue> IntersectionAssign<WildcardBTreeMap<Key, OtherValue>>
-    for WildcardBTreeMap<Key, Value>
+impl<Key, Value, OtherValue> IntersectionAssign<WildcardHashMap<Key, OtherValue>>
+    for WildcardHashMap<Key, Value>
 where
-    Key: Ord + Eq + Clone,
+    Key: Hash + Eq + Clone,
     Value: Set<Empty = Value> + Clone,
     OtherValue: Set<Empty = OtherValue> + Clone,
-    for<'a> Self: IntersectionAssign<&'a WildcardBTreeMap<Key, OtherValue>>,
+    for<'a> Self: IntersectionAssign<&'a WildcardHashMap<Key, OtherValue>>,
 {
-    fn intersection_assign(&mut self, rhs: WildcardBTreeMap<Key, OtherValue>) {
+    fn intersection_assign(&mut self, rhs: WildcardHashMap<Key, OtherValue>) {
         self.intersection_assign(&rhs);
     }
 }
 
-impl<Key, Value, OtherValue> DisjunctiveUnionAssign<&WildcardBTreeMap<Key, OtherValue>>
-    for WildcardBTreeMap<Key, Value>
+impl<Key, Value, OtherValue> DisjunctiveUnionAssign<&WildcardHashMap<Key, OtherValue>>
+    for WildcardHashMap<Key, Value>
 where
-    Key: Ord + Eq + Clone,
+    Key: Hash + Eq + Clone,
     Value: Set<Empty = Value> + Clone,
     OtherValue: Set<Empty = OtherValue> + Clone,
-    Self: DisjunctiveUnionAssign<WildcardBTreeMap<Key, OtherValue>>,
-    WildcardBTreeMap<Key, OtherValue>: Clone,
+    Self: DisjunctiveUnionAssign<WildcardHashMap<Key, OtherValue>>,
+    WildcardHashMap<Key, OtherValue>: Clone,
 {
-    fn disjunctive_union_assign(&mut self, rhs: &WildcardBTreeMap<Key, OtherValue>) {
+    fn disjunctive_union_assign(&mut self, rhs: &WildcardHashMap<Key, OtherValue>) {
         self.disjunctive_union_assign(rhs.clone());
     }
 }
 
-impl<Key, Value, OtherValue> DisjunctiveUnionAssign<WildcardBTreeMap<Key, OtherValue>>
-    for WildcardBTreeMap<Key, Value>
+impl<Key, Value, OtherValue> DisjunctiveUnionAssign<WildcardHashMap<Key, OtherValue>>
+    for WildcardHashMap<Key, Value>
 where
-    Key: Ord + Eq + Clone,
+    Key: Hash + Eq + Clone,
     Value: Set<Empty = Value> + Clone,
     OtherValue: Set<Empty = OtherValue> + Clone,
-    Self: Difference<WildcardBTreeMap<Key, OtherValue>, Output = Self> + Union<Self, Output = Self>,
-    WildcardBTreeMap<Key, OtherValue>: Difference<Self, Output = Self>,
+    Self: Difference<WildcardHashMap<Key, OtherValue>, Output = Self> + Union<Self, Output = Self>,
+    WildcardHashMap<Key, OtherValue>: Difference<Self, Output = Self>,
 {
-    fn disjunctive_union_assign(&mut self, rhs: WildcardBTreeMap<Key, OtherValue>) {
+    fn disjunctive_union_assign(&mut self, rhs: WildcardHashMap<Key, OtherValue>) {
         *self = disjunctive_union_using_difference_and_union(self.clone(), rhs);
     }
 }
@@ -432,139 +435,139 @@ mod tests {
     #[allow(unused_imports)]
     use super::*;
 
-    use maplit::btreemap;
+    use maplit::hashmap;
 
     #[rstest]
     // WildcardList A <-> List B
-    #[case(WildcardBTreeMap {
+    #[case(WildcardHashMap {
         wildcard_value: Box::new(false),
-        wildcard_exceptions: btreemap! {},
-        rest_list: btreemap! {
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {
             0 => true,
         },
-    }, btreemap! {
+    }, hashmap! {
         1 => true,
-    }, WildcardBTreeMap {
+    }, WildcardHashMap {
         wildcard_value: Box::new(false),
-        wildcard_exceptions: btreemap! {},
-        rest_list: btreemap! {
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {
             0 => true,
             1 => true,
         }
     })]
-    #[case(WildcardBTreeMap {
+    #[case(WildcardHashMap {
         wildcard_value: Box::new(true),
-        wildcard_exceptions: btreemap! {},
-        rest_list: btreemap! {},
-    }, btreemap! {
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {},
+    }, hashmap! {
         1 => true,
-    }, WildcardBTreeMap {
+    }, WildcardHashMap {
         wildcard_value: Box::new(true),
-        wildcard_exceptions: btreemap! {},
-        rest_list: btreemap! {}
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {}
     })]
-    #[case(WildcardBTreeMap {
+    #[case(WildcardHashMap {
         wildcard_value: Box::new(true),
-        wildcard_exceptions: btreemap! {
+        wildcard_exceptions: hashmap! {
             1 => true
         },
-        rest_list: btreemap! {},
-    }, btreemap! {
+        rest_list: hashmap! {},
+    }, hashmap! {
         1 => true,
-    }, WildcardBTreeMap {
+    }, WildcardHashMap {
         wildcard_value: Box::new(true),
-        wildcard_exceptions: btreemap! {},
-        rest_list: btreemap! {}
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {}
     })]
-    #[case(WildcardBTreeMap {
+    #[case(WildcardHashMap {
         wildcard_value: Box::new(true),
-        wildcard_exceptions: btreemap! {
+        wildcard_exceptions: hashmap! {
             1 => true,
             2 => true,
         },
-        rest_list: btreemap! {},
-    }, btreemap! {
+        rest_list: hashmap! {},
+    }, hashmap! {
         1 => true,
-    }, WildcardBTreeMap {
+    }, WildcardHashMap {
         wildcard_value: Box::new(true),
-        wildcard_exceptions: btreemap! {
+        wildcard_exceptions: hashmap! {
             2 => true,
         },
-        rest_list: btreemap! {}
+        rest_list: hashmap! {}
     })]
     // WildcardList A <-> WildcardList B
-    #[case(WildcardBTreeMap {
+    #[case(WildcardHashMap {
         wildcard_value: Box::new(true),
-        wildcard_exceptions: btreemap! {
+        wildcard_exceptions: hashmap! {
             2 => true,
         },
-        rest_list: btreemap! {},
-    }, WildcardBTreeMap {
+        rest_list: hashmap! {},
+    }, WildcardHashMap {
         wildcard_value: Box::new(true),
-        wildcard_exceptions: btreemap! {
+        wildcard_exceptions: hashmap! {
             1 => true,
         },
-        rest_list: btreemap! {},
-    }, WildcardBTreeMap {
+        rest_list: hashmap! {},
+    }, WildcardHashMap {
         wildcard_value: Box::new(true),
-        wildcard_exceptions: btreemap! {},
-        rest_list: btreemap! {}
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {}
     })]
-    #[case(WildcardBTreeMap {
+    #[case(WildcardHashMap {
         wildcard_value: Box::new(true),
-        wildcard_exceptions: btreemap! {
+        wildcard_exceptions: hashmap! {
             1 => true,
             2 => true,
         },
-        rest_list: btreemap! {},
-    }, WildcardBTreeMap {
+        rest_list: hashmap! {},
+    }, WildcardHashMap {
         wildcard_value: Box::new(true),
-        wildcard_exceptions: btreemap! {
+        wildcard_exceptions: hashmap! {
             1 => true,
         },
-        rest_list: btreemap! {},
-    }, WildcardBTreeMap {
+        rest_list: hashmap! {},
+    }, WildcardHashMap {
         wildcard_value: Box::new(true),
-        wildcard_exceptions: btreemap! {
+        wildcard_exceptions: hashmap! {
             1 => true,
         },
-        rest_list: btreemap! {}
+        rest_list: hashmap! {}
     })]
-    #[case(WildcardBTreeMap {
-        wildcard_value: Box::new(btreemap! {
+    #[case(WildcardHashMap {
+        wildcard_value: Box::new(hashmap! {
             1 => true
         }),
-        wildcard_exceptions: btreemap! {
-            2 => btreemap! {
+        wildcard_exceptions: hashmap! {
+            2 => hashmap! {
                 1 => true
             }
         },
-        rest_list: btreemap! {},
-    }, WildcardBTreeMap {
-        wildcard_value: Box::new(btreemap! {
+        rest_list: hashmap! {},
+    }, WildcardHashMap {
+        wildcard_value: Box::new(hashmap! {
             2 => true
         }),
-        wildcard_exceptions: btreemap! {
-            1 => btreemap! {
+        wildcard_exceptions: hashmap! {
+            1 => hashmap! {
                 2 => true
             }
         },
-        rest_list: btreemap! {
-            2 => btreemap! {
+        rest_list: hashmap! {
+            2 => hashmap! {
                 1 => true
             }
         },
-    }, WildcardBTreeMap {
-        wildcard_value: Box::new(btreemap! {
+    }, WildcardHashMap {
+        wildcard_value: Box::new(hashmap! {
             1 => true,
             2 => true
         }),
-        wildcard_exceptions: btreemap! {
-            1 => btreemap! {
+        wildcard_exceptions: hashmap! {
+            1 => hashmap! {
                 2 => true
             }
         },
-        rest_list: btreemap! {}
+        rest_list: hashmap! {}
     })]
     fn union_list_tests<I1, I2, R>(#[case] mut list1: I1, #[case] list2: I2, #[case] result: R)
     where
@@ -579,138 +582,138 @@ mod tests {
     }
 
     #[rstest]
-    #[case(WildcardBTreeMap {
+    #[case(WildcardHashMap {
         wildcard_value: Box::new(false),
-        wildcard_exceptions: btreemap! {},
-        rest_list: btreemap! {
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {
             0 => true,
         },
-    }, btreemap! {
+    }, hashmap! {
         1 => true,
-    }, WildcardBTreeMap {
+    }, WildcardHashMap {
         wildcard_value: Box::new(false),
-        wildcard_exceptions: btreemap! {},
-        rest_list: btreemap! {
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {
             0 => true,
         }
     })]
-    #[case(WildcardBTreeMap {
+    #[case(WildcardHashMap {
         wildcard_value: Box::new(true),
-        wildcard_exceptions: btreemap! {},
-        rest_list: btreemap! {},
-    }, btreemap! {
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {},
+    }, hashmap! {
         1 => true,
-    }, WildcardBTreeMap {
+    }, WildcardHashMap {
         wildcard_value: Box::new(true),
-        wildcard_exceptions: btreemap! {
+        wildcard_exceptions: hashmap! {
             1 => true,
         },
-        rest_list: btreemap! {}
+        rest_list: hashmap! {}
     })]
-    #[case(WildcardBTreeMap {
+    #[case(WildcardHashMap {
         wildcard_value: Box::new(true),
-        wildcard_exceptions: btreemap! {
+        wildcard_exceptions: hashmap! {
             1 => true
         },
-        rest_list: btreemap! {},
-    }, btreemap! {
+        rest_list: hashmap! {},
+    }, hashmap! {
         1 => true,
-    }, WildcardBTreeMap {
+    }, WildcardHashMap {
         wildcard_value: Box::new(true),
-        wildcard_exceptions: btreemap! {
+        wildcard_exceptions: hashmap! {
             1 => true,
         },
-        rest_list: btreemap! {}
+        rest_list: hashmap! {}
     })]
-    #[case(WildcardBTreeMap {
+    #[case(WildcardHashMap {
         wildcard_value: Box::new(true),
-        wildcard_exceptions: btreemap! {
+        wildcard_exceptions: hashmap! {
             2 => true,
         },
-        rest_list: btreemap! {
+        rest_list: hashmap! {
         },
-    }, btreemap! {
+    }, hashmap! {
         1 => true,
-    }, WildcardBTreeMap {
+    }, WildcardHashMap {
         wildcard_value: Box::new(true),
-        wildcard_exceptions: btreemap! {
+        wildcard_exceptions: hashmap! {
             2 => true,
             1 => true,
         },
-        rest_list: btreemap! {}
+        rest_list: hashmap! {}
     })]
     // WildcardList A <-> WildcardList B
-    #[case(WildcardBTreeMap::<i32, bool> {
+    #[case(WildcardHashMap::<i32, bool> {
         wildcard_value: Box::new(true),
-        wildcard_exceptions: btreemap! {},
-        rest_list: btreemap! {},
-    }, WildcardBTreeMap {
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {},
+    }, WildcardHashMap {
         wildcard_value: Box::new(true),
-        wildcard_exceptions: btreemap! {},
-        rest_list: btreemap! {},
-    }, WildcardBTreeMap {
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {},
+    }, WildcardHashMap {
         wildcard_value: Box::new(false),
-        wildcard_exceptions: btreemap! {},
-        rest_list: btreemap! {}
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {}
     })]
-    #[case(WildcardBTreeMap {
+    #[case(WildcardHashMap {
         wildcard_value: Box::new(true),
-        wildcard_exceptions: btreemap! {},
-        rest_list: btreemap! {},
-    }, WildcardBTreeMap {
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {},
+    }, WildcardHashMap {
         wildcard_value: Box::new(true),
-        wildcard_exceptions: btreemap! {
+        wildcard_exceptions: hashmap! {
             1 => true,
         },
-        rest_list: btreemap! {},
-    }, WildcardBTreeMap {
+        rest_list: hashmap! {},
+    }, WildcardHashMap {
         wildcard_value: Box::new(false),
-        wildcard_exceptions: btreemap! {},
-        rest_list: btreemap! {
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {
             1 => true,
         }
     })]
-    #[case(WildcardBTreeMap {
+    #[case(WildcardHashMap {
         wildcard_value: Box::new(true),
-        wildcard_exceptions: btreemap! {},
-        rest_list: btreemap! {},
-    }, WildcardBTreeMap {
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {},
+    }, WildcardHashMap {
         wildcard_value: Box::new(false),
-        wildcard_exceptions: btreemap! {},
-        rest_list: btreemap! {
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {
             1 => true,
         },
-    }, WildcardBTreeMap {
+    }, WildcardHashMap {
         wildcard_value: Box::new(true),
-        wildcard_exceptions: btreemap! {
+        wildcard_exceptions: hashmap! {
             1 => true,
         },
-        rest_list: btreemap! {}
+        rest_list: hashmap! {}
     })]
-    #[case(WildcardBTreeMap {
-        wildcard_value: Box::new(btreemap! {
+    #[case(WildcardHashMap {
+        wildcard_value: Box::new(hashmap! {
             1 => true,
             2 => true
         }),
-        wildcard_exceptions: btreemap! {},
-        rest_list: btreemap! {},
-    }, WildcardBTreeMap {
-        wildcard_value: Box::new(btreemap! {
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {},
+    }, WildcardHashMap {
+        wildcard_value: Box::new(hashmap! {
             1 => true
         }),
-        wildcard_exceptions: btreemap! {
-            2 => btreemap! {
+        wildcard_exceptions: hashmap! {
+            2 => hashmap! {
                 1 => true
             }
         },
-        rest_list: btreemap! {},
-    }, WildcardBTreeMap {
-        wildcard_value: Box::new(btreemap! {
+        rest_list: hashmap! {},
+    }, WildcardHashMap {
+        wildcard_value: Box::new(hashmap! {
             2 => true
         }),
-        wildcard_exceptions: btreemap! {},
-        rest_list: btreemap! {
-            2 => btreemap! {
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {
+            2 => hashmap! {
                 1 => true
             }
         }
@@ -729,19 +732,19 @@ mod tests {
 
     #[test]
     fn test_add() {
-        let tree_1 = btreemap! {
-            1 => WildcardBTreeMap {
-                rest_list: btreemap! {},
-                wildcard_exceptions: btreemap! {},
-                wildcard_value: Box::new(btreemap! {
+        let tree_1 = hashmap! {
+            1 => WildcardHashMap {
+                rest_list: hashmap! {},
+                wildcard_exceptions: hashmap! {},
+                wildcard_value: Box::new(hashmap! {
                     15 => true,
                 })
             }
         };
 
-        let tree_2 = btreemap! {
-            1 => btreemap! {
-                5 => btreemap! {
+        let tree_2 = hashmap! {
+            1 => hashmap! {
+                5 => hashmap! {
                     15 => true,
                     5 => true,
                 },
@@ -751,15 +754,15 @@ mod tests {
         let mut tree_1_minus_2 = tree_1.clone();
         tree_1_minus_2.difference_assign(&tree_2);
 
-        let result = btreemap! {
-          1 => WildcardBTreeMap {
-            rest_list: btreemap! {},
-            wildcard_exceptions: btreemap! {
-                5 => btreemap! {
+        let result = hashmap! {
+          1 => WildcardHashMap {
+            rest_list: hashmap! {},
+            wildcard_exceptions: hashmap! {
+                5 => hashmap! {
                     15 => true,
                 },
             },
-            wildcard_value: Box::new(btreemap! {
+            wildcard_value: Box::new(hashmap! {
                 15 => true,
             }),
           }
@@ -773,52 +776,52 @@ mod tests {
     }
 
     #[rstest]
-    #[case(WildcardBTreeMap::<i32, bool> {
+    #[case(WildcardHashMap::<i32, bool> {
         wildcard_value: Box::new(true),
-        wildcard_exceptions: btreemap! {},
-        rest_list: btreemap! {},
-    }, WildcardBTreeMap {
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {},
+    }, WildcardHashMap {
         wildcard_value: Box::new(true),
-        wildcard_exceptions: btreemap! {},
-        rest_list: btreemap! {},
-    }, WildcardBTreeMap {
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {},
+    }, WildcardHashMap {
         wildcard_value: Box::new(true),
-        wildcard_exceptions: btreemap! {},
-        rest_list: btreemap! {}
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {}
     })]
-    #[case(WildcardBTreeMap {
+    #[case(WildcardHashMap {
         wildcard_value: Box::new(true),
-        wildcard_exceptions: btreemap! {
+        wildcard_exceptions: hashmap! {
             1 => true,
         },
-        rest_list: btreemap! {},
-    }, WildcardBTreeMap {
+        rest_list: hashmap! {},
+    }, WildcardHashMap {
         wildcard_value: Box::new(true),
-        wildcard_exceptions: btreemap! {},
-        rest_list: btreemap! {},
-    }, WildcardBTreeMap {
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {},
+    }, WildcardHashMap {
         wildcard_value: Box::new(true),
-        wildcard_exceptions: btreemap! {
+        wildcard_exceptions: hashmap! {
             1 => true,
         },
-        rest_list: btreemap! {}
+        rest_list: hashmap! {}
     })]
-    #[case(WildcardBTreeMap {
+    #[case(WildcardHashMap {
         wildcard_value: Box::new(true),
-        wildcard_exceptions: btreemap! {},
-        rest_list: btreemap! {
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {
             1 => true,
         },
-    }, WildcardBTreeMap {
+    }, WildcardHashMap {
         wildcard_value: Box::new(false),
-        wildcard_exceptions: btreemap! {},
-        rest_list: btreemap! {
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {
             1 => true,
         },
-    }, WildcardBTreeMap {
+    }, WildcardHashMap {
         wildcard_value: Box::new(false),
-        wildcard_exceptions: btreemap! {},
-        rest_list: btreemap! {
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {
             1 => true,
         }
     })]
@@ -837,35 +840,35 @@ mod tests {
     }
 
     #[rstest]
-    #[case(WildcardBTreeMap::<i32, bool> {
+    #[case(WildcardHashMap::<i32, bool> {
         wildcard_value: Box::new(true),
-        wildcard_exceptions: btreemap! {},
-        rest_list: btreemap! {},
-    }, WildcardBTreeMap {
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {},
+    }, WildcardHashMap {
         wildcard_value: Box::new(true),
-        wildcard_exceptions: btreemap! {},
-        rest_list: btreemap! {},
-    }, WildcardBTreeMap {
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {},
+    }, WildcardHashMap {
         wildcard_value: Box::new(false),
-        wildcard_exceptions: btreemap! {},
-        rest_list: btreemap! {}
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {}
     })]
-    #[case(WildcardBTreeMap {
+    #[case(WildcardHashMap {
         wildcard_value: Box::new(true),
-        wildcard_exceptions: btreemap! {
+        wildcard_exceptions: hashmap! {
             1 => true,
         },
-        rest_list: btreemap! {},
-    }, WildcardBTreeMap {
+        rest_list: hashmap! {},
+    }, WildcardHashMap {
         wildcard_value: Box::new(false),
-        wildcard_exceptions: btreemap! {},
-        rest_list: btreemap! {
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {
             1 => true,
         },
-    }, WildcardBTreeMap {
+    }, WildcardHashMap {
         wildcard_value: Box::new(true),
-        wildcard_exceptions: btreemap! {},
-        rest_list: btreemap! {}
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {}
     })]
     fn disjunctive_union_list_tests<I1, I2, R>(
         #[case] mut list1: I1,
