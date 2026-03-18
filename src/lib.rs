@@ -4,7 +4,7 @@
 //! This library was originally designed to create a permission system, but it can be used for any kind of set operations and comparisons.
 
 #[cfg(test)]
-#[doc = include_str!("../../README.md")]
+#[doc = include_str!("../README.md")]
 mod doc_test {}
 
 /// The most basic trait that all sets often must implement to be able to use operations and comparisons, since most require them.
