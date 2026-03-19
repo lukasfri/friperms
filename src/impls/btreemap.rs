@@ -1,13 +1,15 @@
 use std::collections::{BTreeMap, HashMap};
 use std::hash::Hash;
 
-use crate::{Set, impl_map_ref_interaction};
+use crate::{Set, impl_map_owned_operations, impl_map_ref_operations};
 
 use crate::impl_map;
 
-impl_map!(BTreeMap, Key: Ord + Eq + Clone);
-impl_map_ref_interaction!(BTreeMap, BTreeMap, Key: Ord + Eq + Clone);
-impl_map_ref_interaction!(BTreeMap, HashMap, Key: Hash + Ord + Eq + Clone);
+impl_map!(BTreeMap, Key: Ord + Eq);
+impl_map_ref_operations!(BTreeMap, BTreeMap, Key: Ord + Eq + Clone);
+impl_map_ref_operations!(BTreeMap, HashMap, Key: Hash + Ord + Eq + Clone);
+impl_map_owned_operations!(BTreeMap, BTreeMap, Key: Ord + Eq);
+impl_map_owned_operations!(BTreeMap, HashMap, Key: Hash + Ord + Eq);
 
 #[cfg(test)]
 mod tests {
