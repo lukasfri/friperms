@@ -22,6 +22,8 @@ required-features = ["derive"]
 
 [dependencies]
 finit-derive = { path = "./derive", version = "^0.1.0", optional = true }
+phf = { version = "0.13.1", optional = true }
+phf_shared = { version = "0.13.1", optional = true }
 serde = { version = "1.0", default-features = false, features = ["derive"], optional = true }
 
 [dev-dependencies]
@@ -34,3 +36,4 @@ default = ["std"]
 derive = ["finit-derive"]
 serde = ["dep:serde"]
 std = ["serde?/std"]
+phf = ["dep:phf", "dep:phf_shared"]

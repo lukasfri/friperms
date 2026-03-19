@@ -148,14 +148,17 @@ macro_rules! impl_map_owned_operations {
 
 #[macro_export]
 macro_rules! impl_map_ref_operations {
-    ($map:ident, $rhs_map:ident, Key: $($bounds:tt)*) => {
+    ($map:ident, $rhs_map:ident, Key: ($($bounds:tt)*)) => {
+      impl_map_ref_operations!($map, $rhs_map, Key: ($($bounds)*), iter);
+    };
+    ($map:ident, $rhs_map:ident, Key: ($($bounds:tt)*), $rhs_iter_func:ident) => {
         impl<Key: $($bounds)*, Value: Clone, OtherValue: Clone + Set + Into<Value>>
             $crate::operations::UnionAssign<&$rhs_map<Key, OtherValue>> for $map<Key, Value>
         where
             for<'a> Value: $crate::operations::UnionAssign<&'a OtherValue>,
         {
             fn union_assign(&mut self, other: &$rhs_map<Key, OtherValue>) {
-                for (key, other_value) in other.iter() {
+                for (key, other_value) in other.$rhs_iter_func() {
                     if let Some(self_value) = self.get_mut(key) {
                         $crate::operations::UnionAssign::union_assign(self_value, other_value);
                     } else if !other_value.is_empty() {
@@ -184,7 +187,7 @@ macro_rules! impl_map_ref_operations {
             for<'a> Value: $crate::operations::DifferenceAssign<&'a OtherValue>,
         {
             fn difference_assign(&mut self, other: &$rhs_map<Key, OtherValue>) {
-                for (key, other_value) in other.iter() {
+                for (key, other_value) in other.$rhs_iter_func() {
                     let Some(value) = self.get_mut(key) else {
                         continue;
                     };
@@ -247,7 +250,7 @@ macro_rules! impl_map_ref_operations {
         {
             fn disjunctive_union_assign(&mut self, rhs: &$rhs_map<Key, OtherValue>) {
                 //For all keys that don't exist on self (but exist on rhs), add them.
-                for (key, other_value) in rhs.iter() {
+                for (key, other_value) in rhs.$rhs_iter_func() {
                     if let Some(value) = self.get_mut(key) {
                         $crate::operations::DisjunctiveUnionAssign::disjunctive_union_assign(value, other_value);
                     } else {
@@ -270,5 +273,8 @@ macro_rules! impl_map_ref_operations {
                 self
             }
         }
+    };
+    ($map:ident, $rhs_map:ident, Key: $($bounds:tt)*) => {
+      impl_map_ref_operations!($map, $rhs_map, Key: ($($bounds)*));
     };
 }
