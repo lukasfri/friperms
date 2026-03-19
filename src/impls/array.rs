@@ -16,7 +16,109 @@ impl<const N: usize, Value: Set<Empty = Value>> Set for [Value; N] {
     }
 }
 
-// List A <-> List B implementations
+impl<const N: usize, Value: Set<Empty = Value>, OtherValue: Set> UnionAssign<[OtherValue; N]>
+    for [Value; N]
+where
+    Value: UnionAssign<OtherValue>,
+{
+    fn union_assign(&mut self, rhs: [OtherValue; N]) {
+        for (self_i, rhs_i) in self.iter_mut().zip(rhs.into_iter()) {
+            self_i.union_assign(rhs_i);
+        }
+    }
+}
+
+impl<const N: usize, Value: Set<Empty = Value>, OtherValue: Set> Union<[OtherValue; N]>
+    for [Value; N]
+where
+    Value: UnionAssign<OtherValue>,
+{
+    type Output = Self;
+
+    fn union(mut self, rhs: [OtherValue; N]) -> Self::Output {
+        self.union_assign(rhs);
+
+        self
+    }
+}
+
+impl<const N: usize, Value: Set<Empty = Value>, OtherValue: Set<Empty = OtherValue>>
+    DifferenceAssign<[OtherValue; N]> for [Value; N]
+where
+    Value: DifferenceAssign<OtherValue>,
+{
+    fn difference_assign(&mut self, rhs: [OtherValue; N]) {
+        for (self_i, rhs_i) in self.iter_mut().zip(rhs.into_iter()) {
+            self_i.difference_assign(rhs_i);
+        }
+    }
+}
+
+impl<const N: usize, Value: Set<Empty = Value>, OtherValue: Set<Empty = OtherValue>>
+    Difference<[OtherValue; N]> for [Value; N]
+where
+    Value: DifferenceAssign<OtherValue>,
+{
+    type Output = Self;
+
+    fn difference(mut self, rhs: [OtherValue; N]) -> Self::Output {
+        self.difference_assign(rhs);
+
+        self
+    }
+}
+
+impl<const N: usize, Value: Set<Empty = Value>, OtherValue: Set<Empty = OtherValue>>
+    IntersectionAssign<[OtherValue; N]> for [Value; N]
+where
+    Value: IntersectionAssign<OtherValue>,
+{
+    fn intersection_assign(&mut self, rhs: [OtherValue; N]) {
+        for (self_i, rhs_i) in self.iter_mut().zip(rhs.into_iter()) {
+            self_i.intersection_assign(rhs_i);
+        }
+    }
+}
+
+impl<const N: usize, Value: Set<Empty = Value>, OtherValue: Set<Empty = OtherValue>>
+    Intersection<[OtherValue; N]> for [Value; N]
+where
+    Value: IntersectionAssign<OtherValue>,
+{
+    type Output = Self;
+    fn intersection(mut self, other: [OtherValue; N]) -> Self::Output {
+        self.intersection_assign(other);
+
+        self
+    }
+}
+
+impl<const N: usize, Value: Set<Empty = Value>, OtherValue: Set>
+    DisjunctiveUnionAssign<[OtherValue; N]> for [Value; N]
+where
+    Value: DisjunctiveUnionAssign<OtherValue>,
+{
+    fn disjunctive_union_assign(&mut self, rhs: [OtherValue; N]) {
+        for (self_i, rhs_i) in self.iter_mut().zip(rhs.into_iter()) {
+            self_i.disjunctive_union_assign(rhs_i);
+        }
+    }
+}
+
+impl<const N: usize, Value: Set<Empty = Value>, OtherValue: Set> DisjunctiveUnion<[OtherValue; N]>
+    for [Value; N]
+where
+    Value: DisjunctiveUnionAssign<OtherValue>,
+{
+    type Output = Self;
+
+    fn disjunctive_union(mut self, rhs: [OtherValue; N]) -> Self::Output {
+        self.disjunctive_union_assign(rhs);
+
+        self
+    }
+}
+
 impl<const N: usize, Value: Set<Empty = Value>, OtherValue: Set> UnionAssign<&[OtherValue; N]>
     for [Value; N]
 where

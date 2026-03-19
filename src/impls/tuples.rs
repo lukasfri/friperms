@@ -51,6 +51,38 @@ macro_rules! impl_op_assign_tuple {
         }
     };
 }
+macro_rules! impl_op_ref_tuple {
+    ($op:ident, $func_name:ident, $(($ty:ident, $rest_ty:ident)),*) => {
+        impl<'a, $($ty: $op<&'a $rest_ty>, $rest_ty),*> $op<&'a ($($rest_ty,)*)> for ($($ty,)*) {
+            type Output = ($(<$ty as $op<&'a $rest_ty>>::Output,)*);
+
+            fn $func_name(self, other: &'a ($($rest_ty,)*)) -> Self::Output {
+                #[allow(non_snake_case)]
+                let ($($ty,)+) = self;
+                #[allow(non_snake_case)]
+                let ($($rest_ty,)+) = other;
+
+
+                ($($ty.$func_name($rest_ty),)*)
+            }
+        }
+    };
+}
+
+macro_rules! impl_op_assign_ref_tuple {
+    ($op:ident, $func_name:ident, $(($ty:ident, $rest_ty:ident)),+) => {
+        impl<'a, $($ty: $op<&'a $rest_ty>, $rest_ty),*> $op<&'a ($($rest_ty,)*)> for ($($ty,)*) {
+            fn $func_name(&mut self, other: &'a ($($rest_ty,)*)) {
+                #[allow(non_snake_case)]
+                let ($($ty,)+) = self;
+                #[allow(non_snake_case)]
+                let ($($rest_ty,)+) = other;
+
+                $($ty.$func_name($rest_ty);)*
+            }
+        }
+    };
+}
 
 macro_rules! impl_subset_of_tuple {
     ($(($ty:ident, $rest_ty:ident)),+) => {
@@ -78,6 +110,14 @@ macro_rules! impl_tuples {
         impl_op_assign_tuple!(DifferenceAssign, difference_assign, ($first, $first_rest) $(, ($rest, $rest_rest))*);
         impl_op_tuple!(DisjunctiveUnion, disjunctive_union, ($first, $first_rest) $(, ($rest, $rest_rest))*);
         impl_op_assign_tuple!(DisjunctiveUnionAssign, disjunctive_union_assign, ($first, $first_rest) $(, ($rest, $rest_rest))*);
+        impl_op_ref_tuple!(Union, union, ($first, $first_rest) $(, ($rest, $rest_rest))*);
+        impl_op_assign_ref_tuple!(UnionAssign, union_assign, ($first, $first_rest) $(, ($rest, $rest_rest))*);
+        impl_op_ref_tuple!(Intersection, intersection, ($first, $first_rest) $(, ($rest, $rest_rest))*);
+        impl_op_assign_ref_tuple!(IntersectionAssign, intersection_assign, ($first, $first_rest) $(, ($rest, $rest_rest))*);
+        impl_op_ref_tuple!(Difference, difference, ($first, $first_rest) $(, ($rest, $rest_rest))*);
+        impl_op_assign_ref_tuple!(DifferenceAssign, difference_assign, ($first, $first_rest) $(, ($rest, $rest_rest))*);
+        impl_op_ref_tuple!(DisjunctiveUnion, disjunctive_union, ($first, $first_rest) $(, ($rest, $rest_rest))*);
+        impl_op_assign_ref_tuple!(DisjunctiveUnionAssign, disjunctive_union_assign, ($first, $first_rest) $(, ($rest, $rest_rest))*);
         impl_subset_of_tuple!(($first, $first_rest) $(, ($rest, $rest_rest))*);
         impl_tuples!($(($rest, $rest_rest)),*);
     };
