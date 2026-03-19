@@ -1,116 +1,17 @@
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 pub use std::hash::Hash;
 
-use crate::Set;
-use crate::operations::{
-    DifferenceAssign, DisjunctiveUnionAssign, Intersection, IntersectionAssign, UnionAssign,
-};
+use crate::{Set, impl_map, impl_map_ref_interaction};
 
-pub(crate) fn remove_empty_keys<K, V: Set>(map: &mut HashMap<K, V>) {
-    map.retain(|_key, value| !value.is_empty());
-}
-
-impl<Key: Hash + Eq + Clone, Value> Set for HashMap<Key, Value> {
-    type Empty = Self;
-
-    fn is_empty(&self) -> bool {
-        HashMap::is_empty(self)
-    }
-
-    fn empty() -> Self::Empty {
-        HashMap::new()
-    }
-}
-
-// List A <-> List B implementations
-impl<Key: Hash + Eq + Clone, Value: Clone, OtherValue: Clone + Set + Into<Value>>
-    UnionAssign<&HashMap<Key, OtherValue>> for HashMap<Key, Value>
-where
-    for<'a> Value: UnionAssign<&'a OtherValue>,
-{
-    fn union_assign(&mut self, other: &HashMap<Key, OtherValue>) {
-        for (key, other_value) in other.iter() {
-            if let Some(self_value) = self.get_mut(key) {
-                self_value.union_assign(other_value);
-            } else if !other_value.is_empty() {
-                self.insert(key.clone(), other_value.clone().into());
-            }
-        }
-    }
-}
-
-impl<Key: Hash + Eq + Clone, Value, OtherValue> DifferenceAssign<&HashMap<Key, OtherValue>>
-    for HashMap<Key, Value>
-where
-    for<'a> Value: DifferenceAssign<&'a OtherValue>,
-{
-    fn difference_assign(&mut self, other: &HashMap<Key, OtherValue>) {
-        for (key, other_value) in other.iter() {
-            let Some(value) = self.get_mut(key) else {
-                continue;
-            };
-
-            value.difference_assign(other_value);
-        }
-
-        remove_empty_keys(self);
-    }
-}
-
-impl<Key: Hash + Eq + Clone, Value, OtherValue> IntersectionAssign<&HashMap<Key, OtherValue>>
-    for HashMap<Key, Value>
-where
-    for<'a> Value: IntersectionAssign<&'a OtherValue>,
-{
-    fn intersection_assign(&mut self, other: &HashMap<Key, OtherValue>) {
-        //Remove all that don't exist at all in other
-        self.retain(|key, _value| other.get(key).is_some());
-
-        for (key, value) in self.iter_mut() {
-            let other_value = other
-                .get(key)
-                .expect("Removed all keys above that don't exist in other.");
-
-            value.intersection_assign(other_value);
-        }
-    }
-}
-
-impl<Key: Hash + Eq + Clone, Value, OtherValue> Intersection<&HashMap<Key, OtherValue>>
-    for HashMap<Key, Value>
-where
-    for<'a> Value: IntersectionAssign<&'a OtherValue>,
-{
-    type Output = Self;
-    fn intersection(mut self, other: &HashMap<Key, OtherValue>) -> Self::Output {
-        self.intersection_assign(other);
-
-        self
-    }
-}
-
-impl<Key: Hash + Eq + Clone, Value: Clone, OtherValue: Into<Value> + Clone>
-    DisjunctiveUnionAssign<&HashMap<Key, OtherValue>> for HashMap<Key, Value>
-where
-    for<'a> Value: DisjunctiveUnionAssign<&'a OtherValue>,
-{
-    fn disjunctive_union_assign(&mut self, rhs: &HashMap<Key, OtherValue>) {
-        for (key, other_value) in rhs.iter() {
-            if let Some(value) = self.get_mut(key) {
-                value.disjunctive_union_assign(other_value);
-            } else {
-                self.insert(key.clone(), other_value.clone().into());
-            }
-        }
-
-        remove_empty_keys(self);
-    }
-}
+impl_map!(HashMap, Key: Hash + Eq + Clone);
+impl_map_ref_interaction!(HashMap, HashMap, Key: Hash + Eq + Clone);
+impl_map_ref_interaction!(HashMap, BTreeMap, Key: Hash + Ord + Eq + Clone);
 
 #[cfg(test)]
 mod tests {
     use core::fmt::Debug;
 
+    use crate::operations::{DifferenceAssign, UnionAssign};
     use maplit::hashmap;
     use rstest::*;
 
