@@ -22,10 +22,12 @@ macro_rules! impl_map {
 #[macro_export]
 macro_rules! impl_map_owned_operations {
     ($map:ident, $rhs_map:ident, Key: $($bounds:tt)*) => {
-        impl<Key: $($bounds)*, Value: Clone, OtherValue: Clone + Set + Into<Value>>
+        impl<Key, Value, OtherValue>
             $crate::operations::UnionAssign<$rhs_map<Key, OtherValue>> for $map<Key, Value>
         where
-            Value: $crate::operations::UnionAssign< OtherValue>,
+            Key: $($bounds)*,
+            Value: $crate::operations::UnionAssign<OtherValue> + Clone,
+            OtherValue: Clone + Set + Into<Value>
         {
             fn union_assign(&mut self, other: $rhs_map<Key, OtherValue>) {
                 for (key, other_value) in other.into_iter() {
@@ -41,7 +43,9 @@ macro_rules! impl_map_owned_operations {
         impl<Key, Value, OtherValue>
             $crate::operations::Union<$rhs_map<Key, OtherValue>> for $map<Key, Value>
         where
-            Self: $crate::operations::UnionAssign< $rhs_map<Key, OtherValue>>,
+            Key: $($bounds)*,
+            Value: $crate::operations::UnionAssign<OtherValue> + Clone,
+            OtherValue: Clone + Set + Into<Value>
         {
             type Output = Self;
             fn union(mut self, other: $rhs_map<Key, OtherValue>) -> Self::Output {
@@ -51,9 +55,10 @@ macro_rules! impl_map_owned_operations {
             }
         }
 
-        impl<Key: $($bounds)*, Value, OtherValue> $crate::operations::DifferenceAssign<$rhs_map<Key, OtherValue>>
+        impl<Key, Value, OtherValue> $crate::operations::DifferenceAssign<$rhs_map<Key, OtherValue>>
             for $map<Key, Value>
         where
+            Key: $($bounds)*,
             Value: $crate::operations::DifferenceAssign< OtherValue>,
         {
             fn difference_assign(&mut self, other: $rhs_map<Key, OtherValue>) {
@@ -71,7 +76,8 @@ macro_rules! impl_map_owned_operations {
 
         impl<Key, Value, OtherValue> $crate::operations::Difference<$rhs_map<Key, OtherValue>> for $map<Key, Value>
         where
-            Self: $crate::operations::DifferenceAssign<$rhs_map<Key, OtherValue>>,
+            Key: $($bounds)*,
+            Value: $crate::operations::DifferenceAssign< OtherValue>,
         {
             type Output = Self;
             fn difference(mut self, other: $rhs_map<Key, OtherValue>) -> Self::Output {
@@ -81,9 +87,10 @@ macro_rules! impl_map_owned_operations {
             }
         }
 
-        impl<Key: $($bounds)*, Value, OtherValue> $crate::operations::IntersectionAssign<$rhs_map<Key, OtherValue>>
+        impl<Key, Value, OtherValue> $crate::operations::IntersectionAssign<$rhs_map<Key, OtherValue>>
             for $map<Key, Value>
         where
+            Key: $($bounds)*,
             Value: $crate::operations::IntersectionAssign<OtherValue>,
         {
             fn intersection_assign(&mut self, mut other: $rhs_map<Key, OtherValue>) {
@@ -103,7 +110,8 @@ macro_rules! impl_map_owned_operations {
         impl<Key, Value, OtherValue> $crate::operations::Intersection<$rhs_map<Key, OtherValue>>
             for $map<Key, Value>
         where
-            Self: $crate::operations::IntersectionAssign<$rhs_map<Key, OtherValue>>,
+            Key: $($bounds)*,
+            Value: $crate::operations::IntersectionAssign<OtherValue>,
         {
             type Output = Self;
             fn intersection(mut self, other: $rhs_map<Key, OtherValue>) -> Self::Output {
@@ -113,10 +121,12 @@ macro_rules! impl_map_owned_operations {
             }
         }
 
-        impl<Key: $($bounds)*, Value, OtherValue: Into<Value>>
+        impl<Key, Value, OtherValue>
             $crate::operations::DisjunctiveUnionAssign<$rhs_map<Key, OtherValue>> for $map<Key, Value>
         where
+            Key: $($bounds)*,
             Value: $crate::operations::DisjunctiveUnionAssign<OtherValue>,
+            OtherValue: Into<Value>,
         {
             fn disjunctive_union_assign(&mut self, rhs: $rhs_map<Key, OtherValue>) {
                 //For all keys that don't exist on self (but exist on rhs), add them.
@@ -134,7 +144,9 @@ macro_rules! impl_map_owned_operations {
 
         impl<Key, Value, OtherValue> $crate::operations::DisjunctiveUnion<$rhs_map<Key, OtherValue>> for $map<Key, Value>
         where
-            Self: $crate::operations::DisjunctiveUnionAssign<$rhs_map<Key, OtherValue>>,
+            Key: $($bounds)*,
+            Value: $crate::operations::DisjunctiveUnionAssign<OtherValue>,
+            OtherValue: Into<Value>,
         {
             type Output = Self;
             fn disjunctive_union(mut self, rhs: $rhs_map<Key, OtherValue>) -> Self::Output {
@@ -152,10 +164,13 @@ macro_rules! impl_map_ref_operations {
       impl_map_ref_operations!($map, $rhs_map, Key: ($($bounds)*), iter);
     };
     ($map:ident, $rhs_map:ident, Key: ($($bounds:tt)*), $rhs_iter_func:ident) => {
-        impl<Key: $($bounds)*, Value: Clone, OtherValue: Clone + Set + Into<Value>>
+        impl<Key, Value, OtherValue>
             $crate::operations::UnionAssign<&$rhs_map<Key, OtherValue>> for $map<Key, Value>
         where
+            Key: $($bounds)*,
+            Value: Clone,
             for<'a> Value: $crate::operations::UnionAssign<&'a OtherValue>,
+            OtherValue: Clone + Set + Into<Value>,
         {
             fn union_assign(&mut self, other: &$rhs_map<Key, OtherValue>) {
                 for (key, other_value) in other.$rhs_iter_func() {
@@ -171,7 +186,10 @@ macro_rules! impl_map_ref_operations {
         impl<Key, Value, OtherValue>
             $crate::operations::Union<&$rhs_map<Key, OtherValue>> for $map<Key, Value>
         where
-            for<'a> Self: $crate::operations::UnionAssign<&'a $rhs_map<Key, OtherValue>>,
+            Key: $($bounds)*,
+            Value: Clone,
+            for<'a> Value: $crate::operations::UnionAssign<&'a OtherValue>,
+            OtherValue: Clone + Set + Into<Value>,
         {
             type Output = Self;
             fn union(mut self, other: &$rhs_map<Key, OtherValue>) -> Self::Output {
@@ -181,9 +199,10 @@ macro_rules! impl_map_ref_operations {
             }
         }
 
-        impl<Key: $($bounds)*, Value, OtherValue> $crate::operations::DifferenceAssign<&$rhs_map<Key, OtherValue>>
+        impl<Key, Value, OtherValue> $crate::operations::DifferenceAssign<&$rhs_map<Key, OtherValue>>
             for $map<Key, Value>
         where
+            Key: $($bounds)*,
             for<'a> Value: $crate::operations::DifferenceAssign<&'a OtherValue>,
         {
             fn difference_assign(&mut self, other: &$rhs_map<Key, OtherValue>) {
@@ -201,7 +220,8 @@ macro_rules! impl_map_ref_operations {
 
         impl<Key, Value, OtherValue> $crate::operations::Difference<&$rhs_map<Key, OtherValue>> for $map<Key, Value>
         where
-            for<'a> Self: $crate::operations::DifferenceAssign<&'a $rhs_map<Key, OtherValue>>,
+            Key: $($bounds)*,
+            for<'a> Value: $crate::operations::DifferenceAssign<&'a OtherValue>,
         {
             type Output = Self;
             fn difference(mut self, other: &$rhs_map<Key, OtherValue>) -> Self::Output {
@@ -211,9 +231,10 @@ macro_rules! impl_map_ref_operations {
             }
         }
 
-        impl<Key: $($bounds)*, Value, OtherValue> $crate::operations::IntersectionAssign<&$rhs_map<Key, OtherValue>>
+        impl<Key, Value, OtherValue> $crate::operations::IntersectionAssign<&$rhs_map<Key, OtherValue>>
             for $map<Key, Value>
         where
+            Key: $($bounds)*,
             for<'a> Value: $crate::operations::IntersectionAssign<&'a OtherValue>,
         {
             fn intersection_assign(&mut self, other: &$rhs_map<Key, OtherValue>) {
@@ -233,7 +254,8 @@ macro_rules! impl_map_ref_operations {
         impl<Key, Value, OtherValue> $crate::operations::Intersection<&$rhs_map<Key, OtherValue>>
             for $map<Key, Value>
         where
-            for<'a> Self: $crate::operations::IntersectionAssign<&'a $rhs_map<Key, OtherValue>>,
+            Key: $($bounds)*,
+            for<'a> Value: $crate::operations::IntersectionAssign<&'a OtherValue>,
         {
             type Output = Self;
             fn intersection(mut self, other: &$rhs_map<Key, OtherValue>) -> Self::Output {
@@ -243,10 +265,13 @@ macro_rules! impl_map_ref_operations {
             }
         }
 
-        impl<Key: $($bounds)*, Value: Clone, OtherValue: Into<Value> + Clone>
+        impl<Key, Value, OtherValue>
             $crate::operations::DisjunctiveUnionAssign<&$rhs_map<Key, OtherValue>> for $map<Key, Value>
         where
+            Key: $($bounds)*,
+            Value: Clone,
             for<'a> Value: $crate::operations::DisjunctiveUnionAssign<&'a OtherValue>,
+            OtherValue: Into<Value> + Clone,
         {
             fn disjunctive_union_assign(&mut self, rhs: &$rhs_map<Key, OtherValue>) {
                 //For all keys that don't exist on self (but exist on rhs), add them.
@@ -264,7 +289,10 @@ macro_rules! impl_map_ref_operations {
 
         impl<Key, Value, OtherValue> $crate::operations::DisjunctiveUnion<&$rhs_map<Key, OtherValue>> for $map<Key, Value>
         where
-            for<'a> Self: $crate::operations::DisjunctiveUnionAssign<&'a $rhs_map<Key, OtherValue>>,
+            Key: $($bounds)*,
+            Value: Clone,
+            for<'a> Value: $crate::operations::DisjunctiveUnionAssign<&'a OtherValue>,
+            OtherValue: Into<Value> + Clone,
         {
             type Output = Self;
             fn disjunctive_union(mut self, rhs: &$rhs_map<Key, OtherValue>) -> Self::Output {
