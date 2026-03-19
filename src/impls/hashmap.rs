@@ -12,9 +12,10 @@ impl_map_owned_operations!(HashMap, BTreeMap, Key: Hash + Ord + Eq);
 #[cfg(feature = "phf")]
 mod phf_impl {
     use super::*;
-    use phf::{Map as PhfMap, PhfHash};
+    use phf::{Map as PhfMap, OrderedMap as PhfOrderedMap, PhfHash};
     use phf_shared::PhfBorrow;
     impl_map_ref_operations!(HashMap, PhfMap, Key: (Hash + PhfHash + PhfBorrow<Key> + Eq + Clone), entries);
+    impl_map_ref_operations!(HashMap, PhfOrderedMap, Key: (Hash + PhfHash + PhfBorrow<Key> + Eq + Clone), entries);
 }
 
 #[cfg(test)]

@@ -22,7 +22,13 @@
 //! - [`comparisons::SupersetOf`] (⊇)
 //! - [`comparisons::StrictSupersetOf`] (⊃)
 //!
-//!
+//! Feature | Description
+//! --- | --- 
+//! `std` (default) | Adds support for [`std::collections::HashMap`] and [`std::collections::BTreeMap`] as well as adds the types [`collections::WildcardBTreeMap`] and [`collections::WildcardHashMap`].
+//! `derive` | Adds derive macros for operations and comparisons.
+//! `serde`| Adds [`serde::Serialize`] and [`serde::Deserialize`] support for built-in types.
+//! `phf` | Adds operations between [`phf::Map`], [`phf::OrderedMap`] and [`std::collections`] maps.
+//! 
 //! This library was originally designed to create a permission system, but it can be used for any kind of system that requires set-based data structures.
 
 #[cfg(test)]
