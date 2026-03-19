@@ -1,116 +1,30 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
+use std::hash::Hash;
 
-use crate::Set;
-use crate::operations::{
-    DifferenceAssign, DisjunctiveUnionAssign, Intersection, IntersectionAssign, UnionAssign,
-};
+use crate::{Set, impl_map_owned_operations, impl_map_ref_operations};
 
-pub(crate) fn remove_empty_keys<K: Ord, V: Set>(map: &mut BTreeMap<K, V>) {
-    map.retain(|_key, value| !value.is_empty());
-}
+use crate::impl_map;
 
-impl<Key: Ord + Eq + Clone, Value> Set for BTreeMap<Key, Value> {
-    type Empty = Self;
+impl_map!(BTreeMap, Key: Ord + Eq);
+impl_map_ref_operations!(BTreeMap, BTreeMap, Key: Ord + Eq + Clone);
+impl_map_ref_operations!(BTreeMap, HashMap, Key: Hash + Ord + Eq + Clone);
+impl_map_owned_operations!(BTreeMap, BTreeMap, Key: Ord + Eq);
+impl_map_owned_operations!(BTreeMap, HashMap, Key: Hash + Ord + Eq);
 
-    fn is_empty(&self) -> bool {
-        BTreeMap::is_empty(self)
-    }
-
-    fn empty() -> Self::Empty {
-        BTreeMap::new()
-    }
-}
-
-// List A <-> List B implementations
-impl<Key: Ord + Eq + Clone, Value: Clone, OtherValue: Clone + Set + Into<Value>>
-    UnionAssign<&BTreeMap<Key, OtherValue>> for BTreeMap<Key, Value>
-where
-    for<'a> Value: UnionAssign<&'a OtherValue>,
-{
-    fn union_assign(&mut self, other: &BTreeMap<Key, OtherValue>) {
-        for (key, other_value) in other.iter() {
-            if let Some(self_value) = self.get_mut(key) {
-                self_value.union_assign(other_value);
-            } else if !other_value.is_empty() {
-                self.insert(key.clone(), other_value.clone().into());
-            }
-        }
-    }
-}
-
-impl<Key: Ord + Eq + Clone, Value, OtherValue> DifferenceAssign<&BTreeMap<Key, OtherValue>>
-    for BTreeMap<Key, Value>
-where
-    for<'a> Value: DifferenceAssign<&'a OtherValue>,
-{
-    fn difference_assign(&mut self, other: &BTreeMap<Key, OtherValue>) {
-        for (key, other_value) in other.iter() {
-            let Some(value) = self.get_mut(key) else {
-                continue;
-            };
-
-            value.difference_assign(other_value);
-        }
-
-        remove_empty_keys(self);
-    }
-}
-
-impl<Key: Ord + Eq + Clone, Value, OtherValue> IntersectionAssign<&BTreeMap<Key, OtherValue>>
-    for BTreeMap<Key, Value>
-where
-    for<'a> Value: IntersectionAssign<&'a OtherValue>,
-{
-    fn intersection_assign(&mut self, other: &BTreeMap<Key, OtherValue>) {
-        //Remove all that don't exist at all in other
-        self.retain(|key, _value| other.get(key).is_some());
-
-        for (key, value) in self.iter_mut() {
-            let other_value = other
-                .get(key)
-                .expect("Removed all keys above that don't exist in other.");
-
-            value.intersection_assign(other_value);
-        }
-    }
-}
-
-impl<Key: Ord + Eq + Clone, Value, OtherValue> Intersection<&BTreeMap<Key, OtherValue>>
-    for BTreeMap<Key, Value>
-where
-    for<'a> Value: IntersectionAssign<&'a OtherValue>,
-{
-    type Output = Self;
-    fn intersection(mut self, other: &BTreeMap<Key, OtherValue>) -> Self::Output {
-        self.intersection_assign(other);
-
-        self
-    }
-}
-
-impl<Key: Ord + Eq + Clone, Value: Clone, OtherValue: Into<Value> + Clone>
-    DisjunctiveUnionAssign<&BTreeMap<Key, OtherValue>> for BTreeMap<Key, Value>
-where
-    for<'a> Value: DisjunctiveUnionAssign<&'a OtherValue>,
-{
-    fn disjunctive_union_assign(&mut self, rhs: &BTreeMap<Key, OtherValue>) {
-        //For all keys that don't exist on self (but exist on rhs), add them.
-        for (key, other_value) in rhs.iter() {
-            if let Some(value) = self.get_mut(key) {
-                value.disjunctive_union_assign(other_value);
-            } else {
-                self.insert(key.clone(), other_value.clone().into());
-            }
-        }
-
-        remove_empty_keys(self);
-    }
+#[cfg(feature = "phf")]
+mod phf_impl {
+    use super::*;
+    use phf::{Map as PhfMap, OrderedMap as PhfOrderedMap, PhfHash};
+    use phf_shared::PhfBorrow;
+    impl_map_ref_operations!(BTreeMap, PhfMap, Key: (Ord + PhfHash + PhfBorrow<Key> + Eq + Clone), entries);
+    impl_map_ref_operations!(BTreeMap, PhfOrderedMap, Key: (Ord + PhfHash + PhfBorrow<Key> + Eq + Clone), entries);
 }
 
 #[cfg(test)]
 mod tests {
     use core::fmt::Debug;
 
+    use crate::operations::{DifferenceAssign, UnionAssign};
     use maplit::btreemap;
     use rstest::*;
 
