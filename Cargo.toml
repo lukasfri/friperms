@@ -1,6 +1,6 @@
 [package]
 name = "finit"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 description = "Finit is a library for defining sets of data, and then performing set operations on them. It is designed to be used for permission systems, but can be used for any kind of data that can be represented as a set."
 repository = "https://github.com/DreamplaySE/finit"
@@ -22,13 +22,13 @@ name = "derive_tests"
 required-features = ["derive"]
 
 [dependencies]
-finit-derive = { path = "./derive", version = "^0.1.0", optional = true }
-phf = { version = "0.13.1", optional = true }
-phf_shared = { version = "0.13.1", optional = true }
+finit-derive = { path = "./derive", version = "^0.2.0", optional = true }
+phf = { version = "0.13.0", optional = true }
+phf_shared = { version = "0.13.0", optional = true }
 serde = { version = "1.0", default-features = false, features = ["derive"], optional = true }
 
 [dev-dependencies]
-finit-derive = { path = "./derive", version = "^0.1.0" }
+finit-derive = { path = "./derive", version = "^0.2.0" }
 maplit = { version = "1.0.2" }
 rstest = { version = "0.17.0", default-features = false }
 
