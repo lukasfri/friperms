@@ -3,6 +3,7 @@ use crate::operations::{
     Difference, DifferenceAssign, DisjunctiveUnion, DisjunctiveUnionAssign, Intersection,
     IntersectionAssign, Union, UnionAssign,
 };
+use crate::comparisons::{SetEq, SubsetOf};
 
 impl<Value: Set> Set for Box<Value> {
     type Empty = Box<Value::Empty>;
@@ -94,5 +95,23 @@ where
 
     fn disjunctive_union(self, rhs: OtherValue) -> Self::Output {
         Box::new((*self).disjunctive_union(rhs))
+    }
+}
+
+impl<Value, OtherValue> SetEq<OtherValue> for Box<Value>
+where
+    Value: SetEq<OtherValue>,
+{
+    fn set_eq(&self, rhs: &OtherValue) -> bool {
+        Value::set_eq(&**self, rhs)
+    }
+}
+
+impl<Value, OtherValue> SubsetOf<OtherValue> for Box<Value>
+where
+    Value: SubsetOf<OtherValue>,
+{
+    fn subset_of(&self, rhs: &OtherValue) -> bool {
+        Value::subset_of(&**self, rhs)
     }
 }

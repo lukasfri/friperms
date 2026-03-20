@@ -1,13 +1,17 @@
 use std::collections::{BTreeMap, HashMap};
 pub use std::hash::Hash;
 
-use crate::{Set, impl_map, impl_map_owned_operations, impl_map_ref_operations};
+use crate::{
+    Set, impl_map, impl_map_owned_operations, impl_map_ref_operations, impl_map_comparisons,
+};
 
 impl_map!(HashMap, Key: Hash + Eq);
 impl_map_ref_operations!(HashMap, HashMap, Key: Hash + Eq + Clone);
 impl_map_ref_operations!(HashMap, BTreeMap, Key: Hash + Ord + Eq + Clone);
 impl_map_owned_operations!(HashMap, HashMap, Key: Hash + Eq);
 impl_map_owned_operations!(HashMap, BTreeMap, Key: Hash + Ord + Eq);
+impl_map_comparisons!(HashMap, HashMap, Key: Hash + Eq + Clone);
+impl_map_comparisons!(HashMap, BTreeMap, Key: Hash + Ord + Eq + Clone);
 
 #[cfg(feature = "phf")]
 mod phf_impl {
@@ -16,6 +20,8 @@ mod phf_impl {
     use phf_shared::PhfBorrow;
     impl_map_ref_operations!(HashMap, PhfMap, Key: (Hash + PhfHash + PhfBorrow<Key> + Eq + Clone), entries);
     impl_map_ref_operations!(HashMap, PhfOrderedMap, Key: (Hash + PhfHash + PhfBorrow<Key> + Eq + Clone), entries);
+    impl_map_comparisons!(HashMap, PhfMap, Key: (Hash + PhfHash + PhfBorrow<Key> + Eq + Clone));
+    impl_map_comparisons!(HashMap, PhfOrderedMap, Key: (Hash + PhfHash + PhfBorrow<Key> + Eq + Clone));
 }
 
 #[cfg(test)]

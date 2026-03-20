@@ -306,3 +306,42 @@ macro_rules! impl_map_ref_operations {
       impl_map_ref_operations!($map, $rhs_map, Key: ($($bounds)*));
     };
 }
+
+
+#[macro_export]
+macro_rules! impl_map_comparisons {
+    ($map:ident, $rhs_map:ident, Key: ($($bounds:tt)*)) => {
+      impl_map_comparisons!($map, $rhs_map, Key: ($($bounds)*), iter, keys);
+    };
+    ($map:ident, $rhs_map:ident, Key: ($($bounds:tt)*), $self_iter_func:ident, $rhs_key_func:ident) => {
+        impl<Key, Value, OtherValue>
+            $crate::comparisons::SetEq<$rhs_map<Key, OtherValue>> for $map<Key, Value>
+        where
+            Key: $($bounds)*,
+            Value: $crate::comparisons::SetEq<OtherValue> + Clone,
+            OtherValue: Clone + Set + Into<Value>
+        {
+            fn set_eq(&self, rhs: &$rhs_map<Key, OtherValue>) -> bool {
+                rhs.$rhs_key_func().all(|k| self.get(k).is_some()) &&
+                self.$self_iter_func()
+                    .all(|(k, v)| rhs.get(k).is_some_and(|rhs_v| v.set_eq(rhs_v)))
+            }
+        }
+
+        impl<Key, Value, OtherValue>
+            $crate::comparisons::SubsetOf<$rhs_map<Key, OtherValue>> for $map<Key, Value>
+        where
+            Key: $($bounds)*,
+            Value: $crate::comparisons::SubsetOf<OtherValue> + Clone,
+            OtherValue: Clone + Set + Into<Value>
+        {
+            fn subset_of(&self, rhs: &$rhs_map<Key, OtherValue>) -> bool {
+                self.$self_iter_func()
+                    .all(|(k, v)| rhs.get(k).is_some_and(|rhs_v| v.subset_of(rhs_v)))
+            }
+        }
+    };
+    ($map:ident, $rhs_map:ident, Key: $($bounds:tt)*) => {
+      impl_map_comparisons!($map, $rhs_map, Key: ($($bounds)*));
+    };
+}

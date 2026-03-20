@@ -2,6 +2,7 @@ use crate::Set;
 use crate::operations::{
     DifferenceAssign, DisjunctiveUnionAssign, Intersection, IntersectionAssign, UnionAssign,
 };
+use crate::comparisons::{SetEq, SubsetOf};
 
 impl<Value: Set> Set for Option<Value> {
     type Empty = Self;
@@ -126,6 +127,33 @@ where
         }
     }
 }
+
+impl<Value, OtherValue: Set> SetEq<OtherValue> for Option<Value>
+where
+    Value: SetEq<OtherValue>,
+{
+    fn set_eq(&self, rhs: &OtherValue) -> bool {
+        match self {
+            Some(v) if v.set_eq(rhs) => true,
+            None if rhs.is_empty() => true,
+            _ => false,
+        }
+    }
+}
+
+impl<Value, OtherValue: Set> SubsetOf<OtherValue> for Option<Value>
+where
+    Value: SubsetOf<OtherValue>,
+{
+    fn subset_of(&self, rhs: &OtherValue) -> bool {
+        match self {
+            Some(v) if v.subset_of(rhs) => true,
+            None if rhs.is_empty() => true,
+            _ => false,
+        }
+    }
+}
+
 
 #[cfg(test)]
 mod tests {
