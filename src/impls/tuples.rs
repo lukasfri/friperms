@@ -84,16 +84,16 @@ macro_rules! impl_op_assign_ref_tuple {
     };
 }
 
-macro_rules! impl_subset_of_tuple {
-    ($(($ty:ident, $rest_ty:ident)),+) => {
-        impl<$($ty: $crate::comparisons::SubsetOf<$rest_ty>, $rest_ty),*> $crate::comparisons::SubsetOf<($($rest_ty,)*)> for ($($ty,)*) {
-            fn subset_of(&self, other: &($($rest_ty,)*)) -> bool {
+macro_rules! impl_comparison_tuple {
+    ($op:ident, $func_name:ident, $(($ty:ident, $rest_ty:ident)),+) => {
+        impl<$($ty: $crate::comparisons::$op<$rest_ty>, $rest_ty),*> $crate::comparisons::$op<($($rest_ty,)*)> for ($($ty,)*) {
+            fn $func_name(&self, other: &($($rest_ty,)*)) -> bool {
                 #[allow(non_snake_case)]
                 let ($($ty,)+) = self;
                 #[allow(non_snake_case)]
                 let ($($rest_ty,)+) = other;
 
-                $($ty.subset_of($rest_ty))&&*
+                $($ty.$func_name($rest_ty))&&*
             }
         }
     };
@@ -118,7 +118,8 @@ macro_rules! impl_tuples {
         impl_op_assign_ref_tuple!(DifferenceAssign, difference_assign, ($first, $first_rest) $(, ($rest, $rest_rest))*);
         impl_op_ref_tuple!(DisjunctiveUnion, disjunctive_union, ($first, $first_rest) $(, ($rest, $rest_rest))*);
         impl_op_assign_ref_tuple!(DisjunctiveUnionAssign, disjunctive_union_assign, ($first, $first_rest) $(, ($rest, $rest_rest))*);
-        impl_subset_of_tuple!(($first, $first_rest) $(, ($rest, $rest_rest))*);
+        impl_comparison_tuple!(SetEq, set_eq, ($first, $first_rest) $(, ($rest, $rest_rest))*);
+        impl_comparison_tuple!(SubsetOf, subset_of, ($first, $first_rest) $(, ($rest, $rest_rest))*);
         impl_tuples!($(($rest, $rest_rest)),*);
     };
     () => {};

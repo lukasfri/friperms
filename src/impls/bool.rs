@@ -153,6 +153,10 @@ impl DisjunctiveUnionAssign<&bool> for bool {
     }
 }
 
+crate::set_eq_partial_eq_impl!(bool);
+
+crate::subset_of_intersection_identity_impl!(bool);
+
 #[cfg(test)]
 mod tests {
     use rstest::*;

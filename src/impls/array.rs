@@ -3,6 +3,7 @@ use crate::operations::{
     Difference, DifferenceAssign, DisjunctiveUnion, DisjunctiveUnionAssign, Intersection,
     IntersectionAssign, Union, UnionAssign,
 };
+use crate::comparisons::{SetEq, SubsetOf};
 
 impl<const N: usize, Value: Set<Empty = Value>> Set for [Value; N] {
     type Empty = Self;
@@ -219,6 +220,22 @@ where
         self.disjunctive_union_assign(rhs);
 
         self
+    }
+}
+
+impl<const N: usize, Value: SetEq<OtherValue>, OtherValue> SetEq<[OtherValue; N]>
+    for [Value; N]
+{
+    fn set_eq(&self, rhs: &[OtherValue; N]) -> bool {
+        self.iter().zip(rhs.iter()).all(|(self_v, rhs_v)| self_v.set_eq(rhs_v))
+    }
+}
+
+impl<const N: usize, Value: SubsetOf<OtherValue>, OtherValue> SubsetOf<[OtherValue; N]>
+    for [Value; N]
+{
+    fn subset_of(&self, rhs: &[OtherValue; N]) -> bool {
+        self.iter().zip(rhs.iter()).all(|(self_v, rhs_v)| self_v.subset_of(rhs_v))
     }
 }
 

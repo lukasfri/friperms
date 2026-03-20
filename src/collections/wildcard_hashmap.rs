@@ -1,4 +1,5 @@
 use crate::Set;
+use crate::comparisons::{SetEq, SubsetOf};
 use crate::operations::identity::{
     disjunctive_union_using_difference_and_union, intersection_using_double_difference,
 };
@@ -423,6 +424,89 @@ where
 {
     fn disjunctive_union_assign(&mut self, rhs: WildcardHashMap<Key, OtherValue>) {
         *self = disjunctive_union_using_difference_and_union(self.clone(), rhs);
+    }
+}
+
+impl<Key: Hash + Eq + Clone, Value: Set + SetEq<OtherValue>, OtherValue: Set>
+    SetEq<WildcardHashMap<Key, OtherValue>> for WildcardHashMap<Key, Value>
+{
+    fn set_eq(&self, rhs: &WildcardHashMap<Key, OtherValue>) -> bool {
+        self.wildcard_value.set_eq(rhs.wildcard_value.as_ref())
+            && self.wildcard_exceptions.set_eq(&rhs.wildcard_exceptions)
+            && self.rest_list.set_eq(&rhs.rest_list)
+    }
+}
+
+impl<Key: Hash + Eq + Clone, Value: Set + SetEq<OtherValue>, OtherValue: Set>
+    SetEq<HashMap<Key, OtherValue>> for WildcardHashMap<Key, Value>
+{
+    fn set_eq(&self, rhs: &HashMap<Key, OtherValue>) -> bool {
+        self.wildcard_value.is_empty() && self.rest_list.set_eq(rhs)
+    }
+}
+
+impl<Key: Hash + Eq + Clone, Value: Set + SubsetOf<OtherValue>, OtherValue: Set>
+    SubsetOf<WildcardHashMap<Key, OtherValue>> for WildcardHashMap<Key, Value>
+where
+    for<'a> Value: DifferenceAssign<&'a Value>
+        + DifferenceAssign<&'a OtherValue>
+        + UnionAssign<&'a Value>
+        + IntersectionAssign<&'a OtherValue>
+        + Clone,
+{
+    fn subset_of(&self, rhs: &WildcardHashMap<Key, OtherValue>) -> bool {
+        // The wildcard itself must be a subset
+        if !self.wildcard_value.subset_of(rhs.wildcard_value.as_ref()) {
+            return false;
+        }
+
+        let mut checked_keys = std::collections::HashSet::new();
+
+        for key in rhs.wildcard_exceptions.keys().chain(self.rest_list.keys()) {
+            if checked_keys.contains(key) {
+                continue;
+            }
+            checked_keys.insert(key);
+
+            let mut a = self.wildcard_value.deref().clone();
+            if let Some(exc) = self.wildcard_exceptions.get(key) {
+                a.difference_assign(exc);
+            }
+            if let Some(rest) = self.rest_list.get(key) {
+                a.union_assign(rest);
+            }
+
+            if let Some(rhs_rest) = rhs.rest_list.get(key) {
+                a.difference_assign(rhs_rest);
+            }
+
+            let mut a_minus_wb = a.clone();
+            a_minus_wb.difference_assign(rhs.wildcard_value.as_ref());
+            if !a_minus_wb.is_empty() {
+                return false;
+            }
+
+            if let Some(rhs_exc) = rhs.wildcard_exceptions.get(key) {
+                a.intersection_assign(rhs_exc);
+                if !a.is_empty() {
+                    return false;
+                }
+            }
+        }
+
+        true
+    }
+}
+
+impl<Key: Hash + Eq + Clone, Value: Set + SubsetOf<OtherValue>, OtherValue: Set>
+    SubsetOf<HashMap<Key, OtherValue>> for WildcardHashMap<Key, Value>
+{
+    fn subset_of(&self, rhs: &HashMap<Key, OtherValue>) -> bool {
+        if !self.wildcard_value.is_empty() {
+            return false;
+        }
+
+        self.rest_list.subset_of(rhs)
     }
 }
 
@@ -882,5 +966,99 @@ mod tests {
     {
         list1.disjunctive_union_assign(list2);
         assert_eq!(list1, result);
+    }
+
+    #[rstest]
+    // Subset tests
+    #[case(WildcardHashMap::<i32, bool> {
+        wildcard_value: Box::new(false),
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {},
+    }, WildcardHashMap {
+        wildcard_value: Box::new(false),
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {},
+    }, true)]
+    #[case(WildcardHashMap::<i32, bool> {
+        wildcard_value: Box::new(true),
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {},
+    }, WildcardHashMap {
+        wildcard_value: Box::new(true),
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {},
+    }, true)]
+    // subset is smaller wildcard
+    #[case(WildcardHashMap::<i32, bool> {
+        wildcard_value: Box::new(false),
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {},
+    }, WildcardHashMap {
+        wildcard_value: Box::new(true),
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {},
+    }, true)]
+    // subset has more exceptions
+    #[case(WildcardHashMap::<i32, bool> {
+        wildcard_value: Box::new(true),
+        wildcard_exceptions: hashmap! {
+            1 => true,
+        },
+        rest_list: hashmap! {},
+    }, WildcardHashMap {
+        wildcard_value: Box::new(true),
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {},
+    }, true)]
+    // superset has more exceptions -> false
+    #[case(WildcardHashMap::<i32, bool> {
+        wildcard_value: Box::new(true),
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {},
+    }, WildcardHashMap {
+        wildcard_value: Box::new(true),
+        wildcard_exceptions: hashmap! {
+            1 => true,
+        },
+        rest_list: hashmap! {},
+    }, false)]
+    // subset rest_list goes into wildcard
+    #[case(WildcardHashMap::<i32, bool> {
+        wildcard_value: Box::new(false),
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {
+            1 => true,
+        },
+    }, WildcardHashMap {
+        wildcard_value: Box::new(true),
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {},
+    }, true)]
+    // subset rest_list goes into exception -> false
+    #[case(WildcardHashMap::<i32, bool> {
+        wildcard_value: Box::new(false),
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {
+            1 => true,
+        },
+    }, WildcardHashMap {
+        wildcard_value: Box::new(true),
+        wildcard_exceptions: hashmap! {
+            1 => true,
+        },
+        rest_list: hashmap! {},
+    }, false)]
+    fn subset_of_list_tests<I1, I2>(#[case] list1: I1, #[case] list2: I2, #[case] expected: bool)
+    where
+        I1: SubsetOf<I2> + Debug,
+        I2: Debug,
+    {
+        assert_eq!(
+            list1.subset_of(&list2),
+            expected,
+            "{:?} subset_of {:?}",
+            list1,
+            list2
+        );
     }
 }

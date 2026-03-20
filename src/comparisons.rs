@@ -1,22 +1,41 @@
 //! This module contains traits for comparing sets, such as checking if two sets are equal, if one set is a subset of another, etc.
 use crate::operations::*;
 
+#[cfg(feature = "derive")]
+pub use finit_derive::{SetEq, SubsetOf};
+
 /// [`SetEq`] (≡) will check if Self and Rhs are equal as sets, ignoring any non-set properties.
 /// This is not the same as PartialEq, since two sets can be equal even if they are different types, as long as they contain the same elements.
 pub trait SetEq<Rhs = Self> {
     fn set_eq(&self, rhs: &Rhs) -> bool;
 }
 
+impl<T: SetEq<Rhs>, Rhs> SetEq<Rhs> for &T {
+    fn set_eq(&self, rhs: &Rhs) -> bool {
+        T::set_eq(*self, rhs)
+    }
+}
+
 /// A helper macro to implement [`SetEq`] for types that also implement [`PartialEq`], since in many cases they will be the same.
 #[macro_export]
 macro_rules! set_eq_partial_eq_impl {
+    (($($wh:tt)+): $($t:tt)+) => {
+        impl<$($wh)*> $crate::comparisons::SetEq for $($t)* {
+            fn set_eq(&self, rhs: &Self) -> bool {
+                PartialEq::eq(self, rhs)
+            }
+        }
+    };
+    ($t:ty) => {
+        impl $crate::comparisons::SetEq for $t {
+            fn set_eq(&self, rhs: &Self) -> bool {
+                PartialEq::eq(self, rhs)
+            }
+        }
+    };
     ($($t:ty),*) => {
         $(
-            impl $crate::comparisons::SetEq for $t {
-                fn set_eq(&self, rhs: &Self) -> bool {
-                    PartialEq::eq(self, rhs)
-                }
-            }
+            set_eq_partial_eq_impl!($t);
         )*
     };
 }
@@ -26,13 +45,26 @@ pub trait SubsetOf<Rhs = Self> {
     fn subset_of(&self, rhs: &Rhs) -> bool;
 }
 
-impl<T: Clone + SetEq, Rhs> SubsetOf<Rhs> for T
-where
-    for<'a> T: IntersectionAssign<&'a Rhs>,
-{
+impl<T: SubsetOf<Rhs>, Rhs> SubsetOf<Rhs> for &T {
     fn subset_of(&self, rhs: &Rhs) -> bool {
-        identity::subset_using_intersection_eq(self, rhs)
+        T::subset_of(*self, rhs)
     }
+}
+
+#[macro_export]
+macro_rules! subset_of_intersection_identity_impl {
+    ($t:ty) => {
+        impl $crate::comparisons::SubsetOf for $t {
+            fn subset_of(&self, rhs: &Self) -> bool {
+                $crate::comparisons::identity::subset_using_intersection_eq(self, rhs)
+            }
+        }
+    };
+    ($($t:ty),*) => {
+        $(
+            subset_of_intersection_identity_impl!($t);
+        )*
+    };
 }
 
 /// [`StrictSubsetOf`] (⊂) will check if Rhs contains Self, but they cannot be equal. This is the opposite of [`StrictSupersetOf`], so A ⊂ B if and only if B ⊃ A.
