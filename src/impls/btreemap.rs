@@ -10,8 +10,8 @@ impl_map_ref_operations!(BTreeMap, BTreeMap, Key: Ord + Eq + Clone);
 impl_map_ref_operations!(BTreeMap, HashMap, Key: Hash + Ord + Eq + Clone);
 impl_map_owned_operations!(BTreeMap, BTreeMap, Key: Ord + Eq);
 impl_map_owned_operations!(BTreeMap, HashMap, Key: Hash + Ord + Eq);
-impl_map_comparisons!(BTreeMap, BTreeMap, Key: Ord + Eq + Clone);
-impl_map_comparisons!(BTreeMap, HashMap, Key: Hash + Ord + Eq + Clone);
+impl_map_comparisons!(BTreeMap, BTreeMap, Key: Ord + Eq);
+impl_map_comparisons!(BTreeMap, HashMap, Key: Hash + Ord + Eq);
 
 #[cfg(feature = "phf")]
 mod phf_impl {

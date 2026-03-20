@@ -1,4 +1,5 @@
 use crate::Set;
+use crate::comparisons::{SetEq, SubsetOf};
 use crate::operations::identity::{
     disjunctive_union_using_difference_and_union, intersection_using_double_difference,
 };
@@ -424,6 +425,89 @@ where
 {
     fn disjunctive_union_assign(&mut self, rhs: WildcardBTreeMap<Key, OtherValue>) {
         *self = disjunctive_union_using_difference_and_union(self.clone(), rhs);
+    }
+}
+
+impl<Key: Ord + Eq + Clone, Value: Set + SetEq<OtherValue>, OtherValue: Set>
+    SetEq<WildcardBTreeMap<Key, OtherValue>> for WildcardBTreeMap<Key, Value>
+{
+    fn set_eq(&self, rhs: &WildcardBTreeMap<Key, OtherValue>) -> bool {
+        self.wildcard_value.set_eq(rhs.wildcard_value.as_ref())
+            && self.wildcard_exceptions.set_eq(&rhs.wildcard_exceptions)
+            && self.rest_list.set_eq(&rhs.rest_list)
+    }
+}
+
+impl<Key: Ord + Eq + Clone, Value: Set + SetEq<OtherValue>, OtherValue: Set>
+    SetEq<BTreeMap<Key, OtherValue>> for WildcardBTreeMap<Key, Value>
+{
+    fn set_eq(&self, rhs: &BTreeMap<Key, OtherValue>) -> bool {
+        self.wildcard_value.is_empty() && self.rest_list.set_eq(rhs)
+    }
+}
+
+impl<Key: Ord + Eq + Clone, Value: Set + SubsetOf<OtherValue>, OtherValue: Set>
+    SubsetOf<WildcardBTreeMap<Key, OtherValue>> for WildcardBTreeMap<Key, Value>
+where
+    for<'a> Value: DifferenceAssign<&'a Value>
+        + DifferenceAssign<&'a OtherValue>
+        + UnionAssign<&'a Value>
+        + IntersectionAssign<&'a OtherValue>
+        + Clone,
+{
+    fn subset_of(&self, rhs: &WildcardBTreeMap<Key, OtherValue>) -> bool {
+        // The wildcard itself must be a subset
+        if !self.wildcard_value.subset_of(rhs.wildcard_value.as_ref()) {
+            return false;
+        }
+
+        let mut checked_keys = std::collections::BTreeSet::new();
+
+        for key in rhs.wildcard_exceptions.keys().chain(self.rest_list.keys()) {
+            if checked_keys.contains(key) {
+                continue;
+            }
+            checked_keys.insert(key);
+
+            let mut a = self.wildcard_value.deref().clone();
+            if let Some(exc) = self.wildcard_exceptions.get(key) {
+                a.difference_assign(exc);
+            }
+            if let Some(rest) = self.rest_list.get(key) {
+                a.union_assign(rest);
+            }
+
+            if let Some(rhs_rest) = rhs.rest_list.get(key) {
+                a.difference_assign(rhs_rest);
+            }
+
+            let mut a_minus_wb = a.clone();
+            a_minus_wb.difference_assign(rhs.wildcard_value.as_ref());
+            if !a_minus_wb.is_empty() {
+                return false;
+            }
+
+            if let Some(rhs_exc) = rhs.wildcard_exceptions.get(key) {
+                a.intersection_assign(rhs_exc);
+                if !a.is_empty() {
+                    return false;
+                }
+            }
+        }
+
+        true
+    }
+}
+
+impl<Key: Ord + Eq + Clone, Value: Set + SubsetOf<OtherValue>, OtherValue: Set>
+    SubsetOf<BTreeMap<Key, OtherValue>> for WildcardBTreeMap<Key, Value>
+{
+    fn subset_of(&self, rhs: &BTreeMap<Key, OtherValue>) -> bool {
+        if !self.wildcard_value.is_empty() {
+            return false;
+        }
+
+        self.rest_list.subset_of(rhs)
     }
 }
 
