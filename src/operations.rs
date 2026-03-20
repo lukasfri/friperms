@@ -3,7 +3,10 @@
 use crate::Set;
 
 #[cfg(feature = "derive")]
-pub use finit_derive::{DifferenceAssign, DisjunctiveUnionAssign, IntersectionAssign, UnionAssign};
+pub use finit_derive::{
+    Difference, DifferenceAssign, DisjunctiveUnion, DisjunctiveUnionAssign, Intersection,
+    IntersectionAssign, Union, UnionAssign,
+};
 
 /// [`Union`] (denoted by ∪) is the sum of two sets. Union is a symmetric relation, which means that A ∪ B must equal B ∪ A.
 pub trait Union<Rhs = Self>: Set {
