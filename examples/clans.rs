@@ -1,10 +1,11 @@
 use std::collections::HashMap;
 
-use finit::comparisons::{SubsetOf, SetEq};
+use finit::Set;
+use finit::comparisons::{SetEq, SubsetOf};
 use finit::operations::{
-    DifferenceAssign, DisjunctiveUnionAssign, IntersectionAssign, UnionAssign,
+    Difference, DifferenceAssign, DisjunctiveUnion, DisjunctiveUnionAssign, Intersection,
+    IntersectionAssign, Union, UnionAssign,
 };
-use finit::{Set};
 use maplit::hashmap;
 
 #[derive(
@@ -15,6 +16,10 @@ use maplit::hashmap;
     DifferenceAssign,
     IntersectionAssign,
     DisjunctiveUnionAssign,
+    Union,
+    Difference,
+    Intersection,
+    DisjunctiveUnion,
     SetEq,
     SubsetOf,
     PartialEq,
@@ -32,6 +37,10 @@ pub struct ThemingPerms {
     DifferenceAssign,
     IntersectionAssign,
     DisjunctiveUnionAssign,
+    Union,
+    Difference,
+    Intersection,
+    DisjunctiveUnion,
     SetEq,
     SubsetOf,
     PartialEq,
@@ -50,6 +59,10 @@ pub struct ClanPerms {
     DifferenceAssign,
     IntersectionAssign,
     DisjunctiveUnionAssign,
+    Union,
+    Difference,
+    Intersection,
+    DisjunctiveUnion,
     SetEq,
     SubsetOf,
     PartialEq,
