@@ -1,6 +1,6 @@
 [package]
 name = "finit"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2024"
 description = "Finit is a library for defining sets of data, and then performing set operations on them. It is designed to be used for permission systems, but can be used for any kind of data that can be represented as a set."
 repository = "https://github.com/DreamplaySE/finit"
@@ -35,6 +35,6 @@ rstest = { version = "0.17.0", default-features = false }
 [features]
 default = ["std"]
 derive = ["finit-derive"]
+phf = ["dep:phf", "dep:phf_shared"]
 serde = ["dep:serde"]
 std = ["serde?/std"]
-phf = ["dep:phf", "dep:phf_shared"]
