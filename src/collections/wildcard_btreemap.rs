@@ -538,6 +538,38 @@ impl<Key: Ord + Eq + Clone, Value: Set<Empty = Value> + SubsetOf<OtherValue>, Ot
     }
 }
 
+impl<Key: Ord + Eq + Clone, Value: Set + SubsetOf<OtherValue>, OtherValue: Set>
+    SubsetOf<WildcardBTreeMap<Key, OtherValue>> for BTreeMap<Key, Value>
+where
+    Value: Clone,
+    for<'a> Value: DifferenceAssign<&'a OtherValue> + IntersectionAssign<&'a OtherValue>,
+{
+    fn subset_of(&self, rhs: &WildcardBTreeMap<Key, OtherValue>) -> bool {
+        for (key, value) in self.iter() {
+            let mut v = value.clone();
+
+            if let Some(rhs_rest) = rhs.rest_list.get(key) {
+                v.difference_assign(rhs_rest);
+            }
+
+            let mut v_minus_wb = v.clone();
+            v_minus_wb.difference_assign(rhs.wildcard_value.as_ref());
+            if !v_minus_wb.is_empty() {
+                return false;
+            }
+
+            if let Some(rhs_exc) = rhs.wildcard_exceptions.get(key) {
+                v.intersection_assign(rhs_exc);
+                if !v.is_empty() {
+                    return false;
+                }
+            }
+        }
+
+        true
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::fmt::Debug;

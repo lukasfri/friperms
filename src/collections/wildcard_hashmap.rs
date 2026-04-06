@@ -531,6 +531,38 @@ impl<Key: Hash + Eq + Clone, Value: Set<Empty = Value> + SubsetOf<OtherValue>, O
     }
 }
 
+impl<Key: Hash + Eq + Clone, Value: Set + SubsetOf<OtherValue>, OtherValue: Set>
+    SubsetOf<WildcardHashMap<Key, OtherValue>> for HashMap<Key, Value>
+where
+    Value: Clone,
+    for<'a> Value: DifferenceAssign<&'a OtherValue> + IntersectionAssign<&'a OtherValue>,
+{
+    fn subset_of(&self, rhs: &WildcardHashMap<Key, OtherValue>) -> bool {
+        for (key, value) in self.iter() {
+            let mut v = value.clone();
+
+            if let Some(rhs_rest) = rhs.rest_list.get(key) {
+                v.difference_assign(rhs_rest);
+            }
+
+            let mut v_minus_wb = v.clone();
+            v_minus_wb.difference_assign(rhs.wildcard_value.as_ref());
+            if !v_minus_wb.is_empty() {
+                return false;
+            }
+
+            if let Some(rhs_exc) = rhs.wildcard_exceptions.get(key) {
+                v.intersection_assign(rhs_exc);
+                if !v.is_empty() {
+                    return false;
+                }
+            }
+        }
+
+        true
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::fmt::Debug;
@@ -991,7 +1023,7 @@ mod tests {
 
     #[rstest]
     // Subset tests
-    #[case(WildcardHashMap::<i32, bool> {
+    #[case::equals(WildcardHashMap::<i32, bool> {
         wildcard_value: Box::new(false),
         wildcard_exceptions: hashmap! {},
         rest_list: hashmap! {},
@@ -1000,7 +1032,7 @@ mod tests {
         wildcard_exceptions: hashmap! {},
         rest_list: hashmap! {},
     }, true)]
-    #[case(WildcardHashMap::<i32, bool> {
+    #[case::smaller_wildcard(WildcardHashMap::<i32, bool> {
         wildcard_value: Box::new(true),
         wildcard_exceptions: hashmap! {},
         rest_list: hashmap! {},
@@ -1010,7 +1042,7 @@ mod tests {
         rest_list: hashmap! {},
     }, true)]
     // subset is smaller wildcard
-    #[case(WildcardHashMap::<i32, bool> {
+    #[case::smaller_wildcard(WildcardHashMap::<i32, bool> {
         wildcard_value: Box::new(false),
         wildcard_exceptions: hashmap! {},
         rest_list: hashmap! {},
@@ -1020,7 +1052,7 @@ mod tests {
         rest_list: hashmap! {},
     }, true)]
     // subset has more exceptions
-    #[case(WildcardHashMap::<i32, bool> {
+    #[case::more_exceptions(WildcardHashMap::<i32, bool> {
         wildcard_value: Box::new(true),
         wildcard_exceptions: hashmap! {
             1 => true,
@@ -1032,7 +1064,7 @@ mod tests {
         rest_list: hashmap! {},
     }, true)]
     // superset has more exceptions -> false
-    #[case(WildcardHashMap::<i32, bool> {
+    #[case::superset_more_exceptions(WildcardHashMap::<i32, bool> {
         wildcard_value: Box::new(true),
         wildcard_exceptions: hashmap! {},
         rest_list: hashmap! {},
@@ -1044,7 +1076,7 @@ mod tests {
         rest_list: hashmap! {},
     }, false)]
     // subset rest_list goes into wildcard
-    #[case(WildcardHashMap::<i32, bool> {
+    #[case::subset_rest_list_wildcard(WildcardHashMap::<i32, bool> {
         wildcard_value: Box::new(false),
         wildcard_exceptions: hashmap! {},
         rest_list: hashmap! {
@@ -1056,7 +1088,7 @@ mod tests {
         rest_list: hashmap! {},
     }, true)]
     // subset rest_list goes into exception -> false
-    #[case(WildcardHashMap::<i32, bool> {
+    #[case::subset_rest_list_exception(WildcardHashMap::<i32, bool> {
         wildcard_value: Box::new(false),
         wildcard_exceptions: hashmap! {},
         rest_list: hashmap! {
@@ -1069,6 +1101,35 @@ mod tests {
         },
         rest_list: hashmap! {},
     }, false)]
+    // Map <-> WildcardList subset tests
+    #[case::empty_map(HashMap::<i32, bool>::new(), WildcardHashMap::<i32, bool> {
+        wildcard_value: Box::new(false),
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {},
+    }, true)]
+    #[case::map_to_wildcard(hashmap! {
+        1 => true,
+    }, WildcardHashMap {
+        wildcard_value: Box::new(true),
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {},
+    }, true)]
+    #[case::map_to_wildcard(hashmap! {
+        1 => true,
+    }, WildcardHashMap {
+        wildcard_value: Box::new(false),
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {},
+    }, false)]
+    #[case::map_to_rest_list(hashmap! {
+        1 => true,
+    }, WildcardHashMap {
+        wildcard_value: Box::new(false),
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {
+            1 => true,
+        },
+    }, true)]
     fn subset_of_list_tests<I1, I2>(#[case] list1: I1, #[case] list2: I2, #[case] expected: bool)
     where
         I1: SubsetOf<I2> + Debug,
