@@ -15,13 +15,28 @@ use std::{collections::HashMap, hash::Hash, ops::Deref};
 /// This is a generalization of a [`HashMap`] which cannot represent the universal set of its domain in an easy way without having to define a specific value for every value possible of its key type.
 ///
 /// For a similar structure that uses a [`std::collections::BTreeMap`] instead of a [`HashMap`], see [`super::WildcardBTreeMap`].
-pub struct WildcardHashMap<Key: Hash + Eq + Clone, Value: Set> {
+pub struct WildcardHashMap<Key: Hash + Eq + Clone, Value: Set<Empty = Value>> {
+    #[cfg_attr(
+        feature = "serde",
+        serde(default = "HashMap::empty", skip_serializing_if = "HashMap::is_empty")
+    )]
     wildcard_exceptions: HashMap<Key, Value>,
+    #[cfg_attr(
+        feature = "serde",
+        serde(
+            default = "Box::<Value>::empty",
+            skip_serializing_if = "Box::<Value>::is_empty"
+        )
+    )]
     wildcard_value: Box<Value>,
+    #[cfg_attr(
+        feature = "serde",
+        serde(default = "HashMap::empty", skip_serializing_if = "HashMap::is_empty")
+    )]
     rest_list: HashMap<Key, Value>,
 }
 
-impl<Key: Hash + Eq + Clone, Value: Set> WildcardHashMap<Key, Value> {
+impl<Key: Hash + Eq + Clone, Value: Set<Empty = Value>> WildcardHashMap<Key, Value> {
     pub fn new(wildcard_value: Value) -> Self {
         Self {
             wildcard_exceptions: HashMap::empty(),
@@ -427,8 +442,11 @@ where
     }
 }
 
-impl<Key: Hash + Eq + Clone, Value: Set + SetEq<OtherValue>, OtherValue: Set>
-    SetEq<WildcardHashMap<Key, OtherValue>> for WildcardHashMap<Key, Value>
+impl<
+    Key: Hash + Eq + Clone,
+    Value: Set<Empty = Value> + SetEq<OtherValue>,
+    OtherValue: Set<Empty = OtherValue>,
+> SetEq<WildcardHashMap<Key, OtherValue>> for WildcardHashMap<Key, Value>
 {
     fn set_eq(&self, rhs: &WildcardHashMap<Key, OtherValue>) -> bool {
         self.wildcard_value.set_eq(rhs.wildcard_value.as_ref())
@@ -437,7 +455,7 @@ impl<Key: Hash + Eq + Clone, Value: Set + SetEq<OtherValue>, OtherValue: Set>
     }
 }
 
-impl<Key: Hash + Eq + Clone, Value: Set + SetEq<OtherValue>, OtherValue: Set>
+impl<Key: Hash + Eq + Clone, Value: Set<Empty = Value> + SetEq<OtherValue>, OtherValue: Set>
     SetEq<HashMap<Key, OtherValue>> for WildcardHashMap<Key, Value>
 {
     fn set_eq(&self, rhs: &HashMap<Key, OtherValue>) -> bool {
@@ -445,8 +463,11 @@ impl<Key: Hash + Eq + Clone, Value: Set + SetEq<OtherValue>, OtherValue: Set>
     }
 }
 
-impl<Key: Hash + Eq + Clone, Value: Set + SubsetOf<OtherValue>, OtherValue: Set>
-    SubsetOf<WildcardHashMap<Key, OtherValue>> for WildcardHashMap<Key, Value>
+impl<
+    Key: Hash + Eq + Clone,
+    Value: Set<Empty = Value> + SubsetOf<OtherValue>,
+    OtherValue: Set<Empty = OtherValue>,
+> SubsetOf<WildcardHashMap<Key, OtherValue>> for WildcardHashMap<Key, Value>
 where
     for<'a> Value: DifferenceAssign<&'a Value>
         + DifferenceAssign<&'a OtherValue>
@@ -498,7 +519,7 @@ where
     }
 }
 
-impl<Key: Hash + Eq + Clone, Value: Set + SubsetOf<OtherValue>, OtherValue: Set>
+impl<Key: Hash + Eq + Clone, Value: Set<Empty = Value> + SubsetOf<OtherValue>, OtherValue: Set>
     SubsetOf<HashMap<Key, OtherValue>> for WildcardHashMap<Key, Value>
 {
     fn subset_of(&self, rhs: &HashMap<Key, OtherValue>) -> bool {
@@ -1060,5 +1081,24 @@ mod tests {
             list1,
             list2
         );
+    }
+
+    #[cfg(feature = "serde")]
+    #[test]
+    fn serialize_test() {
+        let list = WildcardHashMap {
+            wildcard_value: Box::new(false),
+            wildcard_exceptions: hashmap! {},
+            rest_list: hashmap! {
+                2 => true
+            },
+        };
+
+        let serialized = serde_json::to_string(&list).unwrap();
+        assert_eq!(serialized, "{\"rest_list\":{\"2\":true}}");
+
+        let deserialized: WildcardHashMap<i32, bool> = serde_json::from_str(&serialized).unwrap();
+
+        assert_eq!(list, deserialized);
     }
 }

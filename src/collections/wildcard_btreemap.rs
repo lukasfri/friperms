@@ -15,13 +15,34 @@ use std::{collections::BTreeMap, ops::Deref};
 /// This is a generalization of a [`BTreeMap`] which cannot represent the universal set of its domain in an easy way without having to define a specific value for every value possible of its key type.
 ///
 /// For a similar structure that uses a [`std::collections::HashMap`] instead of a [`BTreeMap`], see [`super::WildcardHashMap`].
-pub struct WildcardBTreeMap<Key: Ord + Eq + Clone, Value: Set> {
+pub struct WildcardBTreeMap<Key: Ord + Eq + Clone, Value: Set<Empty = Value>> {
+    #[cfg_attr(
+        feature = "serde",
+        serde(
+            default = "BTreeMap::empty",
+            skip_serializing_if = "BTreeMap::is_empty"
+        )
+    )]
     wildcard_exceptions: BTreeMap<Key, Value>,
+    #[cfg_attr(
+        feature = "serde",
+        serde(
+            default = "Box::<Value>::empty",
+            skip_serializing_if = "Box::<Value>::is_empty"
+        )
+    )]
     wildcard_value: Box<Value>,
+    #[cfg_attr(
+        feature = "serde",
+        serde(
+            default = "BTreeMap::empty",
+            skip_serializing_if = "BTreeMap::is_empty"
+        )
+    )]
     rest_list: BTreeMap<Key, Value>,
 }
 
-impl<Key: Ord + Eq + Clone, Value: Set> WildcardBTreeMap<Key, Value> {
+impl<Key: Ord + Eq + Clone, Value: Set<Empty = Value>> WildcardBTreeMap<Key, Value> {
     pub fn new(wildcard_value: Value) -> Self {
         Self {
             wildcard_exceptions: BTreeMap::empty(),
@@ -428,8 +449,11 @@ where
     }
 }
 
-impl<Key: Ord + Eq + Clone, Value: Set + SetEq<OtherValue>, OtherValue: Set>
-    SetEq<WildcardBTreeMap<Key, OtherValue>> for WildcardBTreeMap<Key, Value>
+impl<
+    Key: Ord + Eq + Clone,
+    Value: Set<Empty = Value> + SetEq<OtherValue>,
+    OtherValue: Set<Empty = OtherValue>,
+> SetEq<WildcardBTreeMap<Key, OtherValue>> for WildcardBTreeMap<Key, Value>
 {
     fn set_eq(&self, rhs: &WildcardBTreeMap<Key, OtherValue>) -> bool {
         self.wildcard_value.set_eq(rhs.wildcard_value.as_ref())
@@ -438,7 +462,7 @@ impl<Key: Ord + Eq + Clone, Value: Set + SetEq<OtherValue>, OtherValue: Set>
     }
 }
 
-impl<Key: Ord + Eq + Clone, Value: Set + SetEq<OtherValue>, OtherValue: Set>
+impl<Key: Ord + Eq + Clone, Value: Set<Empty = Value> + SetEq<OtherValue>, OtherValue: Set>
     SetEq<BTreeMap<Key, OtherValue>> for WildcardBTreeMap<Key, Value>
 {
     fn set_eq(&self, rhs: &BTreeMap<Key, OtherValue>) -> bool {
@@ -446,8 +470,11 @@ impl<Key: Ord + Eq + Clone, Value: Set + SetEq<OtherValue>, OtherValue: Set>
     }
 }
 
-impl<Key: Ord + Eq + Clone, Value: Set + SubsetOf<OtherValue>, OtherValue: Set>
-    SubsetOf<WildcardBTreeMap<Key, OtherValue>> for WildcardBTreeMap<Key, Value>
+impl<
+    Key: Ord + Eq + Clone,
+    Value: Set<Empty = Value> + SubsetOf<OtherValue>,
+    OtherValue: Set<Empty = OtherValue>,
+> SubsetOf<WildcardBTreeMap<Key, OtherValue>> for WildcardBTreeMap<Key, Value>
 where
     for<'a> Value: DifferenceAssign<&'a Value>
         + DifferenceAssign<&'a OtherValue>
@@ -499,7 +526,7 @@ where
     }
 }
 
-impl<Key: Ord + Eq + Clone, Value: Set + SubsetOf<OtherValue>, OtherValue: Set>
+impl<Key: Ord + Eq + Clone, Value: Set<Empty = Value> + SubsetOf<OtherValue>, OtherValue: Set>
     SubsetOf<BTreeMap<Key, OtherValue>> for WildcardBTreeMap<Key, Value>
 {
     fn subset_of(&self, rhs: &BTreeMap<Key, OtherValue>) -> bool {
@@ -967,5 +994,24 @@ mod tests {
     {
         list1.disjunctive_union_assign(list2);
         assert_eq!(list1, result);
+    }
+
+    #[cfg(feature = "serde")]
+    #[test]
+    fn serialize_test() {
+        let list = WildcardBTreeMap {
+            wildcard_value: Box::new(false),
+            wildcard_exceptions: btreemap! {},
+            rest_list: btreemap! {
+                2 => true
+            },
+        };
+
+        let serialized = serde_json::to_string(&list).unwrap();
+        assert_eq!(serialized, "{\"rest_list\":{\"2\":true}}");
+
+        let deserialized: WildcardBTreeMap<i32, bool> = serde_json::from_str(&serialized).unwrap();
+
+        assert_eq!(list, deserialized);
     }
 }
