@@ -531,7 +531,7 @@ impl<Key: Hash + Eq + Clone, Value: Set<Empty = Value> + SubsetOf<OtherValue>, O
     }
 }
 
-impl<Key: Hash + Eq + Clone, Value: Set + SubsetOf<OtherValue>, OtherValue: Set>
+impl<Key: Hash + Eq + Clone, Value: Set + SubsetOf<OtherValue>, OtherValue: Set<Empty = OtherValue>>
     SubsetOf<WildcardHashMap<Key, OtherValue>> for HashMap<Key, Value>
 where
     Value: Clone,

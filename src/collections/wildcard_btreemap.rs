@@ -538,7 +538,7 @@ impl<Key: Ord + Eq + Clone, Value: Set<Empty = Value> + SubsetOf<OtherValue>, Ot
     }
 }
 
-impl<Key: Ord + Eq + Clone, Value: Set + SubsetOf<OtherValue>, OtherValue: Set>
+impl<Key: Ord + Eq + Clone, Value: Set + SubsetOf<OtherValue>, OtherValue: Set<Empty = OtherValue>>
     SubsetOf<WildcardBTreeMap<Key, OtherValue>> for BTreeMap<Key, Value>
 where
     Value: Clone,
