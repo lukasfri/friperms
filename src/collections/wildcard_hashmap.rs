@@ -1130,6 +1130,21 @@ mod tests {
             1 => true,
         },
     }, true)]
+    #[case(hashmap! {
+        1 => WildcardHashMap {
+            wildcard_value: Box::new(false),
+            wildcard_exceptions: hashmap! {},
+            rest_list: hashmap! { 2 => true },
+        },
+    }, WildcardHashMap {
+        wildcard_value: Box::new(WildcardHashMap {
+            wildcard_value: Box::new(true),
+            wildcard_exceptions: hashmap! {},
+            rest_list: hashmap! {},
+        }),
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {},
+    }, true)]
     fn subset_of_list_tests<I1, I2>(#[case] list1: I1, #[case] list2: I2, #[case] expected: bool)
     where
         I1: SubsetOf<I2> + Debug,
