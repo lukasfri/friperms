@@ -313,9 +313,26 @@ where
         + UnionAssign<&'a OtherValue>
         + UnionAssign<&'a Value>,
     OtherValue: Set<Empty = OtherValue> + Clone,
-    for<'a> OtherValue: IntersectionAssign<&'a Value>,
+    for<'a> OtherValue: IntersectionAssign<&'a Value> + DifferenceAssign<&'a OtherValue>,
 {
     fn difference_assign(&mut self, rhs: &WildcardBTreeMap<Key, OtherValue>) {
+        // Subtract the effective rhs value from self.rest_list entries. Keys in rhs.rest_list
+        // are handled later by the rest_list subtraction step. For keys covered by rhs's
+        // wildcard, the effective value is rhs.wildcard_value minus any exception for that key.
+        if !rhs.wildcard_value.is_empty() {
+            for (key, rest_value) in self.rest_list.iter_mut() {
+                if rhs.rest_list.contains_key(key) {
+                    continue;
+                }
+                let mut rhs_value_at_key = rhs.wildcard_value.deref().clone();
+                if let Some(rhs_exception) = rhs.wildcard_exceptions.get(key) {
+                    rhs_value_at_key.difference_assign(rhs_exception);
+                }
+                rest_value.difference_assign(&rhs_value_at_key);
+            }
+            crate::impls::btreemap::remove_empty_keys(&mut self.rest_list);
+        }
+
         //If exception exists for X key, that value should not be removed for that key.
         //That means, if there is an intersection between that exception and the wildcard value, it should be added to the rest list.
         for (key, other_exception) in rhs.wildcard_exceptions.iter() {
