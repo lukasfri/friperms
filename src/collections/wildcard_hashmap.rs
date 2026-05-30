@@ -823,6 +823,21 @@ mod tests {
             }
         }
     })]
+    #[case(WildcardHashMap {
+        wildcard_value: Box::new(false),
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {
+            1 => true,
+        },
+    }, WildcardHashMap {
+        wildcard_value: Box::new(true),
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {},
+    }, WildcardHashMap {
+        wildcard_value: Box::new(false),
+        wildcard_exceptions: hashmap! {},
+        rest_list: hashmap! {}
+    })]
     fn difference_list_tests<I1, I2, R>(#[case] mut list1: I1, #[case] list2: I2, #[case] result: R)
     where
         I1: PartialEq<R> + Debug,
